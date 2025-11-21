@@ -54,7 +54,7 @@
                 <div class="wp-survey-facebook-box">
                     <div class="wp-survey-facebook-icon">👍</div>
                     <h3 class="wp-survey-facebook-title"><?php _e('Follow our Facebook page to submit your vote!', 'wp-survey'); ?></h3>
-                    <p class="wp-survey-facebook-desc"><?php _e('Click the Follow button below, then confirm you followed', 'wp-survey'); ?></p>
+                    <p class="wp-survey-facebook-desc"><?php _e('To enter the draw for an authentic Cyprus League jersey by Stoiximan, simply like our Facebook page and cast your vote below. Only those who complete both steps will be eligible.', 'wp-survey'); ?></p>
                     
                     <div class="wp-survey-facebook-plugin">
                         <iframe src="https://www.facebook.com/plugins/page.php?href=<?php echo urlencode($survey->facebook_page_url); ?>&tabs=&width=340&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false&appId" width="340" height="130" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
