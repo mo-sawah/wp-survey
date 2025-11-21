@@ -7,7 +7,14 @@
         <div class="wp-survey-admin-main">
             <div class="wp-survey-card">
                 <h2><?php _e('Survey Details', 'wp-survey'); ?></h2>
-                <form id="wp-survey-form">
+                
+                <?php if (isset($_GET['message']) && $_GET['message'] === 'success'): ?>
+                <div class="notice notice-success"><p><?php _e('Survey saved successfully!', 'wp-survey'); ?></p></div>
+                <?php endif; ?>
+                
+                <form id="wp-survey-form" method="post" action="">
+                    <?php wp_nonce_field('wp_survey_save_nonce'); ?>
+                    <input type="hidden" name="wp_survey_save" value="1">
                     <input type="hidden" name="survey_id" value="<?php echo $survey ? $survey->id : '0'; ?>">
                     
                     <table class="form-table">

@@ -41,6 +41,15 @@ class WP_Survey_Admin {
             'wp-survey-add',
             [$this, 'render_add_edit_page']
         );
+        
+        add_submenu_page(
+            'wp-survey',
+            __('Emails', 'wp-survey'),
+            __('Emails', 'wp-survey'),
+            'manage_options',
+            'wp-survey-emails',
+            [$this, 'render_emails_page']
+        );
     }
     
     public function enqueue_admin_assets($hook) {
@@ -67,12 +76,48 @@ class WP_Survey_Admin {
     }
     
     public function render_add_edit_page() {
+        // Handle form submission
+        if (isset($_POST['wp_survey_save']) && check_admin_referer('wp_survey_save_nonce')) {
+            $survey_id = isset($_POST['survey_id']) ? intval($_POST['survey_id']) : 0;
+            
+            $data = [
+                'title' => sanitize_text_field($_POST['title']),
+                'description' => sanitize_textarea_field($_POST['description']),
+                'question' => sanitize_textarea_field($_POST['question']),
+                'language' => sanitize_text_field($_POST['language'])
+            ];
+            
+            if ($survey_id) {
+                WP_Survey_Database::update_survey($survey_id, $data);
+                $id = $survey_id;
+                $message = __('Survey updated successfully', 'wp-survey');
+            } else {
+                $id = WP_Survey_Database::create_survey($data);
+                $message = __('Survey created successfully', 'wp-survey');
+            }
+            
+            wp_redirect(admin_url('admin.php?page=wp-survey-add&id=' . $id . '&message=success'));
+            exit;
+        }
+        
         $survey_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         $survey = $survey_id ? WP_Survey_Database::get_survey($survey_id) : null;
         $choices = $survey_id ? WP_Survey_Database::get_choices($survey_id) : [];
         $stats = $survey_id ? WP_Survey_Database::get_survey_stats($survey_id) : null;
         
         include WP_SURVEY_PLUGIN_DIR . 'admin/views/survey-edit.php';
+    }
+    
+    public function render_emails_page() {
+        $surveys = WP_Survey_Database::get_all_surveys();
+        $selected_survey = isset($_GET['survey_id']) ? intval($_GET['survey_id']) : 0;
+        $emails = [];
+        
+        if ($selected_survey) {
+            $emails = WP_Survey_Database::get_responses($selected_survey);
+        }
+        
+        include WP_SURVEY_PLUGIN_DIR . 'admin/views/emails-list.php';
     }
     
     public function ajax_save_survey() {

@@ -1,31 +1,6 @@
 jQuery(document).ready(function($) {
     
-    // Save Survey
-    $('#wp-survey-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        var formData = {
-            action: 'wp_survey_save',
-            nonce: wpSurvey.nonce,
-            survey_id: $('input[name="survey_id"]').val(),
-            title: $('#title').val(),
-            description: $('#description').val(),
-            question: $('#question').val(),
-            language: $('#language').val()
-        };
-        
-        $.post(wpSurvey.ajaxurl, formData, function(response) {
-            if (response.success) {
-                if ($('input[name="survey_id"]').val() == '0') {
-                    window.location.href = '?page=wp-survey-add&id=' + response.data.id;
-                } else {
-                    showNotice(wpSurvey.strings.saved, 'success');
-                }
-            } else {
-                showNotice(response.data.message || wpSurvey.strings.error, 'error');
-            }
-        });
-    });
+    // Form is now handled by PHP POST - no AJAX needed
     
     // Delete Survey
     $(document).on('click', '.wp-survey-delete', function(e) {

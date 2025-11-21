@@ -7,10 +7,14 @@ class WP_Survey_Database {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
         
+        // Use proper WordPress prefix
         $surveys_table = $wpdb->prefix . 'surveys';
         $choices_table = $wpdb->prefix . 'survey_choices';
         $responses_table = $wpdb->prefix . 'survey_responses';
         
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        
+        // Create surveys table
         $sql = "CREATE TABLE IF NOT EXISTS $surveys_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             title varchar(255) NOT NULL,
@@ -21,9 +25,11 @@ class WP_Survey_Database {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
-        ) $charset_collate;
+        ) $charset_collate;";
+        dbDelta($sql);
         
-        CREATE TABLE IF NOT EXISTS $choices_table (
+        // Create choices table
+        $sql = "CREATE TABLE IF NOT EXISTS $choices_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             survey_id bigint(20) NOT NULL,
             title varchar(255) NOT NULL,
@@ -34,9 +40,11 @@ class WP_Survey_Database {
             vote_count int(11) DEFAULT 0,
             PRIMARY KEY (id),
             KEY survey_id (survey_id)
-        ) $charset_collate;
+        ) $charset_collate;";
+        dbDelta($sql);
         
-        CREATE TABLE IF NOT EXISTS $responses_table (
+        // Create responses table
+        $sql = "CREATE TABLE IF NOT EXISTS $responses_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             survey_id bigint(20) NOT NULL,
             choice_id bigint(20) NOT NULL,
@@ -49,8 +57,6 @@ class WP_Survey_Database {
             KEY choice_id (choice_id),
             KEY email (email)
         ) $charset_collate;";
-        
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
     }
     
