@@ -2,7 +2,7 @@
 
 <div class="wp-survey-container" data-survey-id="<?php echo $survey->id; ?>">
     <div class="wp-survey-card">
-        <div class="wp-survey-header">
+        <div class="wp-survey-header" <?php if ($survey->banner_image): ?>style="background-image: url('<?php echo esc_url($survey->banner_image); ?>'); background-size: cover; background-position: center;"<?php endif; ?>>
             <h1 class="wp-survey-title"><?php echo esc_html($survey->title); ?></h1>
             <?php if ($survey->description): ?>
             <p class="wp-survey-description"><?php echo esc_html($survey->description); ?></p>
@@ -43,9 +43,12 @@
             </div>
 
             <div class="wp-survey-email-section hidden">
-                <label class="wp-survey-email-label"><?php _e('📧 Enter your email to submit your vote', 'wp-survey'); ?></label>
+                <label class="wp-survey-email-label"><?php _e('👤 Enter your name', 'wp-survey'); ?></label>
+                <input type="text" class="wp-survey-name-input" placeholder="Your name" required>
+                
+                <label class="wp-survey-email-label" style="margin-top: 15px;"><?php _e('📧 Enter your email', 'wp-survey'); ?></label>
                 <input type="email" class="wp-survey-email-input" placeholder="your@email.com" required>
-                <div class="wp-survey-email-helper"><?php _e('🔒 Your email is safe with us and will never be shared', 'wp-survey'); ?></div>
+                <div class="wp-survey-email-helper"><?php _e('🔒 Your information is safe with us and will never be shared', 'wp-survey'); ?></div>
             </div>
 
             <div class="wp-survey-error hidden"></div>

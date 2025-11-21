@@ -53,7 +53,18 @@ class WP_Survey_Public {
         
         $survey_id = intval($_POST['survey_id']);
         $choice_id = intval($_POST['choice_id']);
+        $name = sanitize_text_field($_POST['name']);
         $email = sanitize_email($_POST['email']);
+        
+        // Check cookie to prevent duplicate voting
+        $cookie_name = 'wp_survey_voted_' . $survey_id;
+        if (isset($_COOKIE[$cookie_name])) {
+            wp_send_json_error(['message' => __('You have already voted in this survey', 'wp-survey')]);
+        }
+        
+        if (empty($name)) {
+            wp_send_json_error(['message' => __('Please enter your name', 'wp-survey')]);
+        }
         
         if (!is_email($email)) {
             wp_send_json_error(['message' => __('Invalid email address', 'wp-survey')]);
@@ -63,7 +74,10 @@ class WP_Survey_Public {
             wp_send_json_error(['message' => __('You have already voted in this survey', 'wp-survey')]);
         }
         
-        WP_Survey_Database::save_response($survey_id, $choice_id, $email);
+        WP_Survey_Database::save_response($survey_id, $choice_id, $name, $email);
+        
+        // Set cookie for 30 days
+        setcookie($cookie_name, '1', time() + (30 * 24 * 60 * 60), '/');
         
         wp_send_json_success(['message' => __('Thank you for your vote!', 'wp-survey')]);
     }

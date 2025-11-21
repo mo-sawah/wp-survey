@@ -84,6 +84,7 @@ class WP_Survey_Admin {
                 'title' => sanitize_text_field($_POST['title']),
                 'description' => sanitize_textarea_field($_POST['description']),
                 'question' => sanitize_textarea_field($_POST['question']),
+                'banner_image' => esc_url_raw($_POST['banner_image']),
                 'language' => sanitize_text_field($_POST['language'])
             ];
             
@@ -133,6 +134,7 @@ class WP_Survey_Admin {
             'title' => sanitize_text_field($_POST['title']),
             'description' => sanitize_textarea_field($_POST['description']),
             'question' => sanitize_textarea_field($_POST['question']),
+            'banner_image' => esc_url_raw($_POST['banner_image']),
             'language' => sanitize_text_field($_POST['language'])
         ];
         
@@ -214,10 +216,10 @@ class WP_Survey_Admin {
         header('Content-Disposition: attachment; filename="survey-emails-' . $survey_id . '.csv"');
         
         $output = fopen('php://output', 'w');
-        fputcsv($output, ['Email', 'Date']);
+        fputcsv($output, ['Name', 'Email', 'Date']);
         
         foreach ($emails as $row) {
-            fputcsv($output, [$row['email'], $row['created_at']]);
+            fputcsv($output, [$row['name'], $row['email'], $row['created_at']]);
         }
         
         fclose($output);

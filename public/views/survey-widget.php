@@ -1,7 +1,7 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 
 <div class="wp-survey-widget" data-survey-id="<?php echo $survey->id; ?>">
-    <div class="wp-survey-header">
+    <div class="wp-survey-header" <?php if ($survey->banner_image): ?>style="background-image: url('<?php echo esc_url($survey->banner_image); ?>'); background-size: cover; background-position: center;"<?php endif; ?>>
         <h2 class="wp-survey-title"><?php echo esc_html($survey->title); ?></h2>
         <?php if ($survey->description): ?>
         <p class="wp-survey-description"><?php echo esc_html($survey->description); ?></p>
@@ -35,7 +35,10 @@
         </div>
 
         <div class="wp-survey-email-section hidden">
-            <label class="wp-survey-email-label"><?php _e('Your email', 'wp-survey'); ?></label>
+            <label class="wp-survey-email-label"><?php _e('Your name', 'wp-survey'); ?></label>
+            <input type="text" class="wp-survey-name-input" placeholder="Your name" required>
+            
+            <label class="wp-survey-email-label" style="margin-top: 10px;"><?php _e('Your email', 'wp-survey'); ?></label>
             <input type="email" class="wp-survey-email-input" placeholder="email@example.com" required>
             <div class="wp-survey-email-helper"><?php _e('🔒 Safe & secure', 'wp-survey'); ?></div>
         </div>

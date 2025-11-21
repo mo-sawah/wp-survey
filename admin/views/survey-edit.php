@@ -40,6 +40,22 @@
                             </td>
                         </tr>
                         <tr>
+                            <th><label for="banner_image"><?php _e('Banner Image', 'wp-survey'); ?></label></th>
+                            <td>
+                                <div style="margin-bottom: 10px;">
+                                    <?php if ($survey && $survey->banner_image): ?>
+                                        <img src="<?php echo esc_url($survey->banner_image); ?>" style="max-width: 300px; height: auto; border-radius: 8px;" id="banner-preview">
+                                    <?php else: ?>
+                                        <img src="" style="max-width: 300px; height: auto; border-radius: 8px; display: none;" id="banner-preview">
+                                    <?php endif; ?>
+                                </div>
+                                <input type="hidden" id="banner_image" name="banner_image" value="<?php echo $survey && $survey->banner_image ? esc_url($survey->banner_image) : ''; ?>">
+                                <button type="button" class="button" id="upload-banner-btn"><?php _e('Upload Banner Image', 'wp-survey'); ?></button>
+                                <button type="button" class="button" id="remove-banner-btn" style="<?php echo !($survey && $survey->banner_image) ? 'display:none;' : ''; ?>"><?php _e('Remove', 'wp-survey'); ?></button>
+                                <p class="description"><?php _e('Recommended: 1200x400px - This image will be shown in the survey header', 'wp-survey'); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
                             <th><label for="language"><?php _e('Language', 'wp-survey'); ?></label></th>
                             <td>
                                 <select id="language" name="language">

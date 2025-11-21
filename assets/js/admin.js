@@ -2,6 +2,35 @@ jQuery(document).ready(function($) {
     
     // Form is now handled by PHP POST - no AJAX needed
     
+    // Upload Banner Image
+    $('#upload-banner-btn').on('click', function(e) {
+        e.preventDefault();
+        
+        var frame = wp.media({
+            title: 'Select Banner Image',
+            button: { text: 'Use Image' },
+            multiple: false,
+            library: { type: 'image' }
+        });
+        
+        frame.on('select', function() {
+            var attachment = frame.state().get('selection').first().toJSON();
+            $('#banner_image').val(attachment.url);
+            $('#banner-preview').attr('src', attachment.url).show();
+            $('#remove-banner-btn').show();
+        });
+        
+        frame.open();
+    });
+    
+    // Remove Banner Image
+    $('#remove-banner-btn').on('click', function(e) {
+        e.preventDefault();
+        $('#banner_image').val('');
+        $('#banner-preview').attr('src', '').hide();
+        $(this).hide();
+    });
+    
     // Delete Survey
     $(document).on('click', '.wp-survey-delete', function(e) {
         e.preventDefault();

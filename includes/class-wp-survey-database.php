@@ -20,6 +20,7 @@ class WP_Survey_Database {
             title varchar(255) NOT NULL,
             description text,
             question text NOT NULL,
+            banner_image varchar(500),
             status varchar(20) DEFAULT 'active',
             language varchar(10) DEFAULT 'en',
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -48,6 +49,7 @@ class WP_Survey_Database {
             id bigint(20) NOT NULL AUTO_INCREMENT,
             survey_id bigint(20) NOT NULL,
             choice_id bigint(20) NOT NULL,
+            name varchar(255),
             email varchar(255) NOT NULL,
             ip_address varchar(45),
             user_agent text,
@@ -80,6 +82,7 @@ class WP_Survey_Database {
             'title' => sanitize_text_field($data['title']),
             'description' => sanitize_textarea_field($data['description']),
             'question' => sanitize_textarea_field($data['question']),
+            'banner_image' => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
             'language' => sanitize_text_field($data['language'])
         ]);
         
@@ -94,6 +97,7 @@ class WP_Survey_Database {
             'title' => sanitize_text_field($data['title']),
             'description' => sanitize_textarea_field($data['description']),
             'question' => sanitize_textarea_field($data['question']),
+            'banner_image' => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
             'language' => sanitize_text_field($data['language'])
         ], ['id' => $id]);
     }
@@ -153,7 +157,7 @@ class WP_Survey_Database {
         return $wpdb->delete($table, ['id' => $id]);
     }
     
-    public static function save_response($survey_id, $choice_id, $email) {
+    public static function save_response($survey_id, $choice_id, $name, $email) {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_responses';
         $choices_table = $wpdb->prefix . 'survey_choices';
@@ -161,6 +165,7 @@ class WP_Survey_Database {
         $wpdb->insert($table, [
             'survey_id' => intval($survey_id),
             'choice_id' => intval($choice_id),
+            'name' => sanitize_text_field($name),
             'email' => sanitize_email($email),
             'ip_address' => $_SERVER['REMOTE_ADDR'],
             'user_agent' => sanitize_text_field($_SERVER['HTTP_USER_AGENT'])
@@ -228,7 +233,7 @@ class WP_Survey_Database {
         $table = $wpdb->prefix . 'survey_responses';
         
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT DISTINCT email, created_at FROM $table WHERE survey_id = %d ORDER BY created_at DESC",
+            "SELECT DISTINCT name, email, created_at FROM $table WHERE survey_id = %d ORDER BY created_at DESC",
             $survey_id
         ), ARRAY_A);
     }

@@ -6,6 +6,113 @@
     line-height: 1.5;
 }
 
+/* Dark Mode Support */
+.s-dark .wp-survey-card,
+.s-dark .wp-survey-widget {
+    background: #1f2937;
+}
+
+.s-dark .wp-survey-question,
+.s-dark .wp-survey-choice-title {
+    color: #f3f4f6;
+}
+
+.s-dark .wp-survey-choice {
+    background: #111827;
+    border-color: #374151;
+}
+
+.s-dark .wp-survey-choice:hover {
+    border-color: #f59e0b;
+    background: #1f2937;
+}
+
+.s-dark .wp-survey-choice.selected {
+    background: linear-gradient(to right, rgba(245, 158, 11, 0.1), rgba(0, 0, 0, 0.2));
+}
+
+.s-dark .wp-survey-choice-desc1 {
+    color: #d1d5db;
+}
+
+.s-dark .wp-survey-choice-desc2 {
+    color: #9ca3af;
+}
+
+.s-dark .wp-survey-progress-wrapper {
+    background: #111827;
+    border-bottom-color: #374151;
+}
+
+.s-dark .wp-survey-email-input,
+.s-dark .wp-survey-name-input {
+    background: #111827;
+    border-color: #374151;
+    color: #f3f4f6;
+}
+
+.s-dark .wp-survey-email-input:focus,
+.s-dark .wp-survey-name-input:focus {
+    border-color: #f59e0b;
+    background: #1f2937;
+}
+
+.s-dark .wp-survey-email-label {
+    color: #f3f4f6;
+}
+
+.s-dark .wp-survey-email-helper {
+    color: #9ca3af;
+}
+
+/* Light Mode (default) */
+.s-light .wp-survey-card,
+.s-light .wp-survey-widget {
+    background: #fff;
+}
+
+.s-light .wp-survey-question,
+.s-light .wp-survey-choice-title {
+    color: #1f2937;
+}
+
+.s-light .wp-survey-choice {
+    background: #fff;
+    border-color: #e5e7eb;
+}
+
+.s-light .wp-survey-choice:hover {
+    border-color: #f59e0b;
+    background: #fff;
+}
+
+.s-light .wp-survey-choice.selected {
+    background: linear-gradient(to right, rgba(245, 158, 11, 0.05), rgba(0, 0, 0, 0.05));
+}
+
+.s-light .wp-survey-choice-desc1 {
+    color: #374151;
+}
+
+.s-light .wp-survey-choice-desc2 {
+    color: #6b7280;
+}
+
+.s-light .wp-survey-email-input,
+.s-light .wp-survey-name-input {
+    background: #fff;
+    border-color: #e5e7eb;
+    color: #1f2937;
+}
+
+.s-light .wp-survey-email-label {
+    color: #1f2937;
+}
+
+.s-light .wp-survey-email-helper {
+    color: #6b7280;
+}
+
 /* Full Page Survey */
 .wp-survey-container {
     max-width: 900px;
@@ -26,6 +133,24 @@
     padding: 40px 30px;
     color: #fff;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.wp-survey-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.7) 100%);
+    z-index: 1;
+}
+
+.wp-survey-header > * {
+    position: relative;
+    z-index: 2;
 }
 
 .wp-survey-title {
@@ -33,12 +158,14 @@
     font-weight: 700;
     margin: 0 0 12px 0;
     line-height: 1.2;
+    color: #fff !important;
 }
 
 .wp-survey-description {
     font-size: 16px;
-    opacity: 0.9;
+    opacity: 0.95;
     margin: 0;
+    color: #fff !important;
 }
 
 .wp-survey-progress-wrapper {
@@ -219,6 +346,7 @@
     display: block;
 }
 
+.wp-survey-name-input,
 .wp-survey-email-input {
     width: 100%;
     padding: 14px 18px;
@@ -229,6 +357,7 @@
     font-family: inherit;
 }
 
+.wp-survey-name-input:focus,
 .wp-survey-email-input:focus {
     outline: none;
     border-color: #f59e0b;
@@ -357,37 +486,44 @@
 }
 
 .wp-survey-widget .wp-survey-choice {
-    padding: 16px;
-    flex-direction: column;
-    text-align: center;
+    padding: 12px;
+    flex-direction: row;
+    text-align: left;
+    align-items: center;
 }
 
 .wp-survey-widget .wp-survey-choice-image {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 12px;
+    width: 60px;
+    height: 60px;
+    margin: 0 12px 0 0;
+    flex-shrink: 0;
 }
 
 .wp-survey-widget .wp-survey-choice-content {
-    text-align: center;
+    text-align: left;
+    flex: 1;
+    min-width: 0;
 }
 
 .wp-survey-widget .wp-survey-choice-title {
-    font-size: 15px;
+    font-size: 14px;
+    margin-bottom: 4px;
 }
 
 .wp-survey-widget .wp-survey-choice-desc1,
 .wp-survey-widget .wp-survey-choice-desc2 {
-    font-size: 12px;
+    font-size: 11px;
+    line-height: 1.3;
+    margin-bottom: 2px;
 }
 
 .wp-survey-widget .wp-survey-choice-check {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    position: relative;
+    top: auto;
+    right: auto;
     width: 20px;
     height: 20px;
-    margin: 0;
+    margin: 0 0 0 8px;
 }
 
 .wp-survey-widget .wp-survey-buttons {

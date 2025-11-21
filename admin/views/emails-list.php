@@ -30,6 +30,7 @@
     <table class="wp-list-table widefat fixed striped">
         <thead>
             <tr>
+                <th><?php _e('Name', 'wp-survey'); ?></th>
                 <th><?php _e('Email', 'wp-survey'); ?></th>
                 <th><?php _e('Choice', 'wp-survey'); ?></th>
                 <th><?php _e('IP Address', 'wp-survey'); ?></th>
@@ -48,7 +49,8 @@
                 ));
             ?>
             <tr>
-                <td><strong><?php echo esc_html($response->email); ?></strong></td>
+                <td><strong><?php echo esc_html($response->name ? $response->name : '-'); ?></strong></td>
+                <td><?php echo esc_html($response->email); ?></td>
                 <td><?php echo $choice ? esc_html($choice->title) : '-'; ?></td>
                 <td><?php echo esc_html($response->ip_address); ?></td>
                 <td><?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), strtotime($response->created_at))); ?></td>
