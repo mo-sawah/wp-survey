@@ -12,11 +12,15 @@ jQuery(document).ready(function($) {
         
         var $choices = $container.find('.wp-survey-choice');
         var $facebookSection = $container.find('.wp-survey-facebook-section');
+        var $facebookCheckbox = $container.find('.wp-survey-facebook-checkbox');
         var $submitBtn = $container.find('.wp-survey-button-primary');
         var $progressFill = $container.find('.wp-survey-progress-fill');
         var $progressText = $container.find('.wp-survey-progress-text');
         var $error = $container.find('.wp-survey-error');
         var selectedChoiceId = null;
+        
+        // Initially disable submit button
+        $submitBtn.prop('disabled', true);
         
         // Handle choice selection
         $choices.on('click', function() {
@@ -28,13 +32,38 @@ jQuery(document).ready(function($) {
             // Show Facebook section
             $facebookSection.removeClass('hidden').addClass('show');
             
-            // Enable submit button
-            $submitBtn.prop('disabled', false);
-            
             // Update progress
             if ($progressFill.length) {
-                $progressFill.css('width', '100%');
-                $progressText.text('Question 1 of 1 • 100% Complete');
+                $progressFill.css('width', '50%');
+                $progressText.text('Question 1 of 1 • 50% Complete');
+            }
+            
+            // Check if checkbox is checked or if no Facebook URL
+            if ($facebookCheckbox.length === 0 || $facebookCheckbox.is(':checked')) {
+                $submitBtn.prop('disabled', false);
+                if ($progressFill.length) {
+                    $progressFill.css('width', '100%');
+                    $progressText.text('Question 1 of 1 • 100% Complete');
+                }
+            } else {
+                $submitBtn.prop('disabled', true);
+            }
+        });
+        
+        // Handle checkbox change
+        $facebookCheckbox.on('change', function() {
+            if ($(this).is(':checked') && selectedChoiceId) {
+                $submitBtn.prop('disabled', false);
+                if ($progressFill.length) {
+                    $progressFill.css('width', '100%');
+                    $progressText.text('Question 1 of 1 • 100% Complete');
+                }
+            } else {
+                $submitBtn.prop('disabled', true);
+                if ($progressFill.length) {
+                    $progressFill.css('width', '50%');
+                    $progressText.text('Question 1 of 1 • 50% Complete');
+                }
             }
         });
         

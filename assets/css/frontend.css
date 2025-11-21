@@ -389,6 +389,36 @@
     display: inline-block;
 }
 
+.wp-survey-facebook-confirm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    margin-top: 16px;
+    transition: all 0.3s ease;
+}
+
+.wp-survey-facebook-confirm:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.wp-survey-facebook-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #fff;
+}
+
+.wp-survey-facebook-confirm span {
+    color: #fff !important;
+}
+
 .wp-survey-facebook-helper {
     font-size: 13px;
     margin: 0;

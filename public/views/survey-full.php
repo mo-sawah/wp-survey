@@ -53,14 +53,17 @@
                 <?php if ($survey->facebook_page_url): ?>
                 <div class="wp-survey-facebook-box">
                     <div class="wp-survey-facebook-icon">👍</div>
-                    <h3 class="wp-survey-facebook-title"><?php _e('Like our Facebook page to submit your vote!', 'wp-survey'); ?></h3>
-                    <p class="wp-survey-facebook-desc"><?php _e('Click the button below to like our page, then submit your vote', 'wp-survey'); ?></p>
+                    <h3 class="wp-survey-facebook-title"><?php _e('Follow our Facebook page to submit your vote!', 'wp-survey'); ?></h3>
+                    <p class="wp-survey-facebook-desc"><?php _e('Click the Follow button below, then confirm you followed', 'wp-survey'); ?></p>
                     
                     <div class="wp-survey-facebook-plugin">
-                        <iframe src="https://www.facebook.com/plugins/like.php?href=<?php echo urlencode($survey->facebook_page_url); ?>&width=450&layout=button_count&action=like&size=large&share=false&height=28&appId" width="450" height="28" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                        <iframe src="https://www.facebook.com/plugins/page.php?href=<?php echo urlencode($survey->facebook_page_url); ?>&tabs=&width=340&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false&appId" width="340" height="130" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
                     </div>
                     
-                    <p class="wp-survey-facebook-helper"><?php _e('✓ After liking, click Submit Vote below', 'wp-survey'); ?></p>
+                    <label class="wp-survey-facebook-confirm">
+                        <input type="checkbox" class="wp-survey-facebook-checkbox">
+                        <span><?php _e('✓ I have followed the page', 'wp-survey'); ?></span>
+                    </label>
                 </div>
                 <?php else: ?>
                 <div class="wp-survey-facebook-box">

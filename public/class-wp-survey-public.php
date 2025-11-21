@@ -60,20 +60,6 @@ class WP_Survey_Public {
             wp_send_json_error(['message' => __('You have already voted in this survey', 'wp-survey')]);
         }
         
-        // Check IP-based voting (optional backup)
-        $ip_address = $_SERVER['REMOTE_ADDR'];
-        global $wpdb;
-        $responses_table = $wpdb->prefix . 'survey_responses';
-        $existing = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND ip_address = %s",
-            $survey_id,
-            $ip_address
-        ));
-        
-        if ($existing > 0) {
-            wp_send_json_error(['message' => __('You have already voted in this survey', 'wp-survey')]);
-        }
-        
         WP_Survey_Database::save_response($survey_id, $choice_id, '', '');
         
         // Set cookie for 30 days
