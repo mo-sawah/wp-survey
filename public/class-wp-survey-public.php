@@ -53,8 +53,6 @@ class WP_Survey_Public {
         
         $survey_id = intval($_POST['survey_id']);
         $choice_id = intval($_POST['choice_id']);
-        $name = sanitize_text_field($_POST['name']);
-        $email = sanitize_email($_POST['email']);
         
         // Check cookie to prevent duplicate voting
         $cookie_name = 'wp_survey_voted_' . $survey_id;
@@ -62,19 +60,21 @@ class WP_Survey_Public {
             wp_send_json_error(['message' => __('You have already voted in this survey', 'wp-survey')]);
         }
         
-        if (empty($name)) {
-            wp_send_json_error(['message' => __('Please enter your name', 'wp-survey')]);
-        }
+        // Check IP-based voting (optional backup)
+        $ip_address = $_SERVER['REMOTE_ADDR'];
+        global $wpdb;
+        $responses_table = $wpdb->prefix . 'survey_responses';
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND ip_address = %s",
+            $survey_id,
+            $ip_address
+        ));
         
-        if (!is_email($email)) {
-            wp_send_json_error(['message' => __('Invalid email address', 'wp-survey')]);
-        }
-        
-        if (WP_Survey_Database::has_voted($survey_id, $email)) {
+        if ($existing > 0) {
             wp_send_json_error(['message' => __('You have already voted in this survey', 'wp-survey')]);
         }
         
-        WP_Survey_Database::save_response($survey_id, $choice_id, $name, $email);
+        WP_Survey_Database::save_response($survey_id, $choice_id, '', '');
         
         // Set cookie for 30 days
         setcookie($cookie_name, '1', time() + (30 * 24 * 60 * 60), '/');

@@ -85,6 +85,7 @@ class WP_Survey_Admin {
                 'description' => sanitize_textarea_field($_POST['description']),
                 'question' => sanitize_textarea_field($_POST['question']),
                 'banner_image' => esc_url_raw($_POST['banner_image']),
+                'facebook_page_url' => esc_url_raw($_POST['facebook_page_url']),
                 'language' => sanitize_text_field($_POST['language'])
             ];
             
@@ -135,6 +136,7 @@ class WP_Survey_Admin {
             'description' => sanitize_textarea_field($_POST['description']),
             'question' => sanitize_textarea_field($_POST['question']),
             'banner_image' => esc_url_raw($_POST['banner_image']),
+            'facebook_page_url' => esc_url_raw($_POST['facebook_page_url']),
             'language' => sanitize_text_field($_POST['language'])
         ];
         

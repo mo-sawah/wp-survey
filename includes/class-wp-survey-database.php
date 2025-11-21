@@ -21,6 +21,7 @@ class WP_Survey_Database {
             description text,
             question text NOT NULL,
             banner_image varchar(500),
+            facebook_page_url varchar(500),
             status varchar(20) DEFAULT 'active',
             language varchar(10) DEFAULT 'en',
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
@@ -83,6 +84,7 @@ class WP_Survey_Database {
             'description' => sanitize_textarea_field($data['description']),
             'question' => sanitize_textarea_field($data['question']),
             'banner_image' => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
+            'facebook_page_url' => isset($data['facebook_page_url']) ? esc_url_raw($data['facebook_page_url']) : '',
             'language' => sanitize_text_field($data['language'])
         ]);
         
@@ -98,6 +100,7 @@ class WP_Survey_Database {
             'description' => sanitize_textarea_field($data['description']),
             'question' => sanitize_textarea_field($data['question']),
             'banner_image' => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
+            'facebook_page_url' => isset($data['facebook_page_url']) ? esc_url_raw($data['facebook_page_url']) : '',
             'language' => sanitize_text_field($data['language'])
         ], ['id' => $id]);
     }
@@ -157,7 +160,7 @@ class WP_Survey_Database {
         return $wpdb->delete($table, ['id' => $id]);
     }
     
-    public static function save_response($survey_id, $choice_id, $name, $email) {
+    public static function save_response($survey_id, $choice_id, $name = '', $email = '') {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_responses';
         $choices_table = $wpdb->prefix . 'survey_choices';

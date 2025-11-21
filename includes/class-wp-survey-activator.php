@@ -24,6 +24,12 @@ class WP_Survey_Activator {
             $wpdb->query("ALTER TABLE $surveys_table ADD COLUMN banner_image varchar(500) AFTER question");
         }
         
+        // Check and add facebook_page_url to surveys table
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $surveys_table LIKE 'facebook_page_url'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $surveys_table ADD COLUMN facebook_page_url varchar(500) AFTER banner_image");
+        }
+        
         // Check and add name to responses table
         $responses_table = $wpdb->prefix . 'survey_responses';
         $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $responses_table LIKE 'name'");

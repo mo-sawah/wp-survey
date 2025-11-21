@@ -41,13 +41,23 @@
             <?php endforeach; ?>
         </div>
 
-        <div class="wp-survey-email-section hidden">
-            <label class="wp-survey-email-label"><?php _e('Your name', 'wp-survey'); ?></label>
-            <input type="text" class="wp-survey-name-input" placeholder="Your name" required>
-            
-            <label class="wp-survey-email-label" style="margin-top: 10px;"><?php _e('Your email', 'wp-survey'); ?></label>
-            <input type="email" class="wp-survey-email-input" placeholder="email@example.com" required>
-            <div class="wp-survey-email-helper"><?php _e('🔒 Safe & secure', 'wp-survey'); ?></div>
+        <div class="wp-survey-facebook-section hidden">
+            <?php if ($survey->facebook_page_url): ?>
+            <div class="wp-survey-facebook-box">
+                <div class="wp-survey-facebook-icon">👍</div>
+                <p class="wp-survey-facebook-desc"><?php _e('Like our page to vote', 'wp-survey'); ?></p>
+                
+                <div class="wp-survey-facebook-plugin">
+                    <iframe src="https://www.facebook.com/plugins/like.php?href=<?php echo urlencode($survey->facebook_page_url); ?>&width=340&layout=button_count&action=like&size=large&share=false&height=28&appId" width="340" height="28" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+                </div>
+                
+                <p class="wp-survey-facebook-helper"><?php _e('Then click Submit', 'wp-survey'); ?></p>
+            </div>
+            <?php else: ?>
+            <div class="wp-survey-facebook-box">
+                <p class="wp-survey-facebook-desc"><?php _e('Click Submit to vote', 'wp-survey'); ?></p>
+            </div>
+            <?php endif; ?>
         </div>
 
         <div class="wp-survey-error hidden"></div>

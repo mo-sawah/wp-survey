@@ -56,6 +56,13 @@
                             </td>
                         </tr>
                         <tr>
+                            <th><label for="facebook_page_url"><?php _e('Facebook Page URL', 'wp-survey'); ?></label></th>
+                            <td>
+                                <input type="url" id="facebook_page_url" name="facebook_page_url" class="regular-text" value="<?php echo $survey && $survey->facebook_page_url ? esc_url($survey->facebook_page_url) : ''; ?>" placeholder="https://www.facebook.com/YourPageName">
+                                <p class="description"><?php _e('Enter your Facebook page URL. Users will be asked to like/follow your page to submit their vote.', 'wp-survey'); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
                             <th><label for="language"><?php _e('Language', 'wp-survey'); ?></label></th>
                             <td>
                                 <select id="language" name="language">

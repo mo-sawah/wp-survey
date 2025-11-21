@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WP Survey
  * Plugin URI: https://sawahsolutions.com
- * Description: Modern survey plugin with image support and email capture
- * Version: 1.1.1
+ * Description: Modern survey plugin with image support and Facebook integration
+ * Version: 1.2.0
  * Author: Mohamed Sawah
  * Author URI: https://sawahsolutions.com
  * Text Domain: wp-survey
@@ -15,7 +15,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('WP_SURVEY_VERSION', '1.1.1');
+define('WP_SURVEY_VERSION', '1.2.0');
 define('WP_SURVEY_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WP_SURVEY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WP_SURVEY_PLUGIN_FILE', __FILE__);

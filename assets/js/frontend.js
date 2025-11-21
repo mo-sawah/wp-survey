@@ -11,9 +11,7 @@ jQuery(document).ready(function($) {
         }
         
         var $choices = $container.find('.wp-survey-choice');
-        var $emailSection = $container.find('.wp-survey-email-section');
-        var $nameInput = $container.find('.wp-survey-name-input');
-        var $emailInput = $container.find('.wp-survey-email-input');
+        var $facebookSection = $container.find('.wp-survey-facebook-section');
         var $submitBtn = $container.find('.wp-survey-button-primary');
         var $progressFill = $container.find('.wp-survey-progress-fill');
         var $progressText = $container.find('.wp-survey-progress-text');
@@ -27,57 +25,18 @@ jQuery(document).ready(function($) {
             $(this).find('input[type="radio"]').prop('checked', true);
             selectedChoiceId = $(this).data('choice-id');
             
-            // Show email section
-            $emailSection.removeClass('hidden').addClass('show');
+            // Show Facebook section
+            $facebookSection.removeClass('hidden').addClass('show');
+            
+            // Enable submit button
+            $submitBtn.prop('disabled', false);
             
             // Update progress
             if ($progressFill.length) {
-                $progressFill.css('width', '33%');
-                $progressText.text('Question 1 of 1 • 33% Complete');
+                $progressFill.css('width', '100%');
+                $progressText.text('Question 1 of 1 • 100% Complete');
             }
-            
-            // Enable submit if both fields are valid
-            checkFormValidity();
         });
-        
-        // Handle name input
-        $nameInput.on('input', function() {
-            updateProgress();
-            checkFormValidity();
-        });
-        
-        // Handle email input
-        $emailInput.on('input', function() {
-            updateProgress();
-            checkFormValidity();
-        });
-        
-        function updateProgress() {
-            if (!$progressFill.length) return;
-            
-            var hasChoice = selectedChoiceId !== null;
-            var hasName = $nameInput.val().trim() !== '';
-            var hasEmail = $emailInput.val().trim() !== '' && isValidEmail($emailInput.val());
-            
-            var progress = 0;
-            if (hasChoice) progress = 33;
-            if (hasChoice && hasName) progress = 66;
-            if (hasChoice && hasName && hasEmail) progress = 100;
-            
-            $progressFill.css('width', progress + '%');
-            $progressText.text('Question 1 of 1 • ' + progress + '% Complete');
-        }
-        
-        function checkFormValidity() {
-            var name = $nameInput.val().trim();
-            var email = $emailInput.val().trim();
-            
-            if (name && email && isValidEmail(email) && selectedChoiceId) {
-                $submitBtn.prop('disabled', false);
-            } else {
-                $submitBtn.prop('disabled', true);
-            }
-        }
         
         // Handle form submission
         $submitBtn.on('click', function(e) {
@@ -88,18 +47,6 @@ jQuery(document).ready(function($) {
                 return;
             }
             
-            var name = $nameInput.val().trim();
-            if (!name) {
-                showError('Please enter your name');
-                return;
-            }
-            
-            var email = $emailInput.val();
-            if (!isValidEmail(email)) {
-                showError('Please enter a valid email address');
-                return;
-            }
-            
             $submitBtn.prop('disabled', true).text('Submitting...');
             $error.addClass('hidden');
             
@@ -107,9 +54,7 @@ jQuery(document).ready(function($) {
                 action: 'wp_survey_submit',
                 nonce: wpSurveyPublic.nonce,
                 survey_id: surveyId,
-                choice_id: selectedChoiceId,
-                name: name,
-                email: email
+                choice_id: selectedChoiceId
             }, function(response) {
                 if (response.success) {
                     showSuccess();
@@ -165,10 +110,6 @@ jQuery(document).ready(function($) {
             } else {
                 $container.find('.wp-survey-card').html(successHtml);
             }
-        }
-        
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
         
         function getCookie(name) {
