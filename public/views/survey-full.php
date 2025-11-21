@@ -2,11 +2,18 @@
 
 <div class="wp-survey-container" data-survey-id="<?php echo $survey->id; ?>">
     <div class="wp-survey-card">
-        <div class="wp-survey-header" <?php if ($survey->banner_image): ?>style="background-image: url('<?php echo esc_url($survey->banner_image); ?>'); background-size: cover; background-position: center;"<?php endif; ?>>
-            <h1 class="wp-survey-title"><?php echo esc_html($survey->title); ?></h1>
-            <?php if ($survey->description): ?>
-            <p class="wp-survey-description"><?php echo esc_html($survey->description); ?></p>
+        <div class="wp-survey-header">
+            <?php if ($survey->banner_image): ?>
+            <div class="wp-survey-banner-image">
+                <img src="<?php echo esc_url($survey->banner_image); ?>" alt="<?php echo esc_attr($survey->title); ?>">
+            </div>
             <?php endif; ?>
+            <div class="wp-survey-header-content">
+                <h1 class="wp-survey-title"><?php echo esc_html($survey->title); ?></h1>
+                <?php if ($survey->description): ?>
+                <p class="wp-survey-description"><?php echo esc_html($survey->description); ?></p>
+                <?php endif; ?>
+            </div>
         </div>
 
         <div class="wp-survey-progress-wrapper">

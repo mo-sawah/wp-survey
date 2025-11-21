@@ -130,27 +130,25 @@
 
 .wp-survey-header {
     background: #000;
-    padding: 40px 30px;
-    color: #fff;
-    text-align: center;
-    position: relative;
     overflow: hidden;
 }
 
-.wp-survey-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.7) 100%);
-    z-index: 1;
+.wp-survey-banner-image {
+    width: 100%;
+    overflow: hidden;
 }
 
-.wp-survey-header > * {
-    position: relative;
-    z-index: 2;
+.wp-survey-banner-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.wp-survey-header-content {
+    padding: 40px 30px;
+    color: #fff;
+    text-align: center;
+    background: #000;
 }
 
 .wp-survey-title {
@@ -465,6 +463,10 @@
 }
 
 .wp-survey-widget .wp-survey-header {
+    padding: 0;
+}
+
+.wp-survey-widget .wp-survey-header-content {
     padding: 24px 20px;
 }
 
