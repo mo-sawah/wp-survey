@@ -81,12 +81,12 @@ class WP_Survey_Admin {
             $survey_id = isset($_POST['survey_id']) ? intval($_POST['survey_id']) : 0;
             
             $data = [
-                'title' => sanitize_text_field($_POST['title']),
-                'description' => sanitize_textarea_field($_POST['description']),
-                'question' => sanitize_textarea_field($_POST['question']),
-                'banner_image' => esc_url_raw($_POST['banner_image']),
-                'facebook_page_url' => esc_url_raw($_POST['facebook_page_url']),
-                'language' => sanitize_text_field($_POST['language'])
+                'title' => sanitize_text_field(wp_unslash($_POST['title'])),
+                'description' => sanitize_textarea_field(wp_unslash($_POST['description'])),
+                'question' => sanitize_textarea_field(wp_unslash($_POST['question'])),
+                'banner_image' => esc_url_raw(wp_unslash($_POST['banner_image'])),
+                'facebook_page_url' => esc_url_raw(wp_unslash($_POST['facebook_page_url'])),
+                'language' => sanitize_text_field(wp_unslash($_POST['language']))
             ];
             
             if ($survey_id) {
@@ -132,12 +132,12 @@ class WP_Survey_Admin {
         $survey_id = isset($_POST['survey_id']) ? intval($_POST['survey_id']) : 0;
         
         $data = [
-            'title' => sanitize_text_field($_POST['title']),
-            'description' => sanitize_textarea_field($_POST['description']),
-            'question' => sanitize_textarea_field($_POST['question']),
-            'banner_image' => esc_url_raw($_POST['banner_image']),
-            'facebook_page_url' => esc_url_raw($_POST['facebook_page_url']),
-            'language' => sanitize_text_field($_POST['language'])
+            'title' => sanitize_text_field(wp_unslash($_POST['title'])),
+            'description' => sanitize_textarea_field(wp_unslash($_POST['description'])),
+            'question' => sanitize_textarea_field(wp_unslash($_POST['question'])),
+            'banner_image' => esc_url_raw(wp_unslash($_POST['banner_image'])),
+            'facebook_page_url' => esc_url_raw(wp_unslash($_POST['facebook_page_url'])),
+            'language' => sanitize_text_field(wp_unslash($_POST['language']))
         ];
         
         if ($survey_id) {
@@ -174,10 +174,10 @@ class WP_Survey_Admin {
         
         $data = [
             'survey_id' => intval($_POST['survey_id']),
-            'title' => sanitize_text_field($_POST['title']),
-            'description_1' => sanitize_textarea_field($_POST['description_1']),
-            'description_2' => sanitize_textarea_field($_POST['description_2']),
-            'image_url' => esc_url_raw($_POST['image_url']),
+            'title' => sanitize_text_field(wp_unslash($_POST['title'])),
+            'description_1' => sanitize_textarea_field(wp_unslash($_POST['description_1'])),
+            'description_2' => sanitize_textarea_field(wp_unslash($_POST['description_2'])),
+            'image_url' => esc_url_raw(wp_unslash($_POST['image_url'])),
             'sort_order' => intval($_POST['sort_order'])
         ];
         
