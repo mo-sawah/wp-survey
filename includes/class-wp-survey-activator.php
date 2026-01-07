@@ -88,5 +88,20 @@ class WP_Survey_Activator {
             $wpdb->query("ALTER TABLE $responses_table ADD COLUMN session_id varchar(255) AFTER choice_id");
             $wpdb->query("ALTER TABLE $responses_table ADD KEY session_id (session_id)");
         }
+        
+        // ============================================
+        // UPDATE QUESTIONS TABLE
+        // ============================================
+        $questions_table = $wpdb->prefix . 'survey_questions';
+        
+        // Check if questions table exists first
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$questions_table'");
+        if ($table_exists) {
+            // Check and add allow_multiple to questions table
+            $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $questions_table LIKE 'allow_multiple'");
+            if (empty($column_exists)) {
+                $wpdb->query("ALTER TABLE $questions_table ADD COLUMN allow_multiple tinyint(1) DEFAULT 0 AFTER question_text");
+            }
+        }
     }
 }

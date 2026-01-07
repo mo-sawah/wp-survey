@@ -38,6 +38,7 @@ class WP_Survey_Database {
             id bigint(20) NOT NULL AUTO_INCREMENT,
             survey_id bigint(20) NOT NULL,
             question_text text NOT NULL,
+            allow_multiple tinyint(1) DEFAULT 0,
             sort_order int(11) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -169,6 +170,7 @@ class WP_Survey_Database {
         $wpdb->insert($table, [
             'survey_id' => intval($data['survey_id']),
             'question_text' => sanitize_textarea_field($data['question_text']),
+            'allow_multiple' => isset($data['allow_multiple']) ? intval($data['allow_multiple']) : 0,
             'sort_order' => intval($data['sort_order'])
         ]);
         
@@ -181,6 +183,7 @@ class WP_Survey_Database {
         
         return $wpdb->update($table, [
             'question_text' => sanitize_textarea_field($data['question_text']),
+            'allow_multiple' => isset($data['allow_multiple']) ? intval($data['allow_multiple']) : 0,
             'sort_order' => intval($data['sort_order'])
         ], ['id' => $id]);
     }

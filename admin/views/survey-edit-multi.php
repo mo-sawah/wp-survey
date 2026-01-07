@@ -126,6 +126,15 @@
                             <div class="wp-survey-question-content">
                                 <input type="text" class="question-text large-text" placeholder="<?php _e('Enter your question here...', 'wp-survey'); ?>" value="<?php echo esc_attr($question->question_text); ?>">
                                 
+                                <div class="wp-survey-question-settings">
+                                    <label class="wp-survey-toggle">
+                                        <input type="checkbox" class="question-allow-multiple" <?php echo ($question->allow_multiple) ? 'checked' : ''; ?>>
+                                        <span class="wp-survey-toggle-slider"></span>
+                                        <span class="wp-survey-toggle-label"><?php _e('Allow Multiple Choices', 'wp-survey'); ?></span>
+                                    </label>
+                                    <p class="description"><?php _e('Enable this to let users select multiple answers for this question', 'wp-survey'); ?></p>
+                                </div>
+                                
                                 <div class="wp-survey-question-choices">
                                     <h4><?php _e('Choices for this question:', 'wp-survey'); ?></h4>
                                     <button type="button" class="button add-choice-btn"><?php _e('Add Choice', 'wp-survey'); ?></button>

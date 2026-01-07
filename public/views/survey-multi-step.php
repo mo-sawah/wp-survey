@@ -57,16 +57,27 @@
                 <?php foreach ($questions_data as $index => $q_data): ?>
                 <div class="wp-survey-question-step <?php echo $index === 0 ? 'active' : ''; ?>" 
                      data-question-index="<?php echo $index; ?>" 
-                     data-question-id="<?php echo $q_data['question']->id; ?>">
+                     data-question-id="<?php echo $q_data['question']->id; ?>"
+                     data-allow-multiple="<?php echo $q_data['question']->allow_multiple ? '1' : '0'; ?>">
                     
                     <h2 class="wp-survey-question"><?php echo esc_html($q_data['question']->question_text); ?></h2>
+                    
+                    <?php if ($q_data['question']->allow_multiple): ?>
+                    <p class="wp-survey-question-hint"><?php _e('Select all that apply', 'wp-survey'); ?></p>
+                    <?php endif; ?>
                     
                     <div class="wp-survey-choices">
                         <?php foreach ($q_data['choices'] as $choice): ?>
                         <label class="wp-survey-choice" data-choice-id="<?php echo $choice->id; ?>">
+                            <?php if ($q_data['question']->allow_multiple): ?>
+                            <input type="checkbox" 
+                                   name="question-<?php echo $q_data['question']->id; ?>[]" 
+                                   value="<?php echo $choice->id; ?>">
+                            <?php else: ?>
                             <input type="radio" 
                                    name="question-<?php echo $q_data['question']->id; ?>" 
                                    value="<?php echo $choice->id; ?>">
+                            <?php endif; ?>
                             <?php if ($choice->image_url): ?>
                             <div class="wp-survey-choice-image">
                                 <img src="<?php echo esc_url($choice->image_url); ?>" alt="<?php echo esc_attr($choice->title); ?>">

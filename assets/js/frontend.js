@@ -155,14 +155,37 @@ jQuery(document).ready(function ($) {
     $questionSteps.each(function () {
       var $step = $(this);
       var questionId = $step.data("question-id");
+      var allowMultiple = $step.data("allow-multiple");
 
       $step.find(".wp-survey-choice").on("click", function () {
         var $choice = $(this);
-        $step.find(".wp-survey-choice").removeClass("selected");
-        $choice.addClass("selected");
-        $choice.find('input[type="radio"]').prop("checked", true);
+        var choiceId = $choice.data("choice-id");
 
-        responses[questionId] = $choice.data("choice-id");
+        if (allowMultiple) {
+          // Multiple choice - toggle selection
+          $choice.toggleClass("selected");
+          $choice
+            .find('input[type="checkbox"]')
+            .prop("checked", $choice.hasClass("selected"));
+
+          // Update responses array
+          var selectedChoices = [];
+          $step.find(".wp-survey-choice.selected").each(function () {
+            selectedChoices.push($(this).data("choice-id"));
+          });
+
+          if (selectedChoices.length > 0) {
+            responses[questionId] = selectedChoices;
+          } else {
+            delete responses[questionId];
+          }
+        } else {
+          // Single choice - radio button behavior
+          $step.find(".wp-survey-choice").removeClass("selected");
+          $choice.addClass("selected");
+          $choice.find('input[type="radio"]').prop("checked", true);
+          responses[questionId] = [choiceId];
+        }
 
         // Enable next/submit button
         if (currentStep < totalSteps - 1) {
@@ -214,10 +237,16 @@ jQuery(document).ready(function ($) {
 
       var responsesArray = [];
       for (var qId in responses) {
-        responsesArray.push({
-          question_id: qId,
-          choice_id: responses[qId],
-        });
+        var choiceIds = responses[qId];
+        // Handle both single choice (array with one item) and multiple choices (array with multiple items)
+        if (Array.isArray(choiceIds)) {
+          choiceIds.forEach(function (choiceId) {
+            responsesArray.push({
+              question_id: qId,
+              choice_id: choiceId,
+            });
+          });
+        }
       }
 
       $.post(
@@ -321,14 +350,37 @@ jQuery(document).ready(function ($) {
     $questionBlocks.each(function () {
       var $block = $(this);
       var questionId = $block.data("question-id");
+      var allowMultiple = $block.data("allow-multiple");
 
       $block.find(".wp-survey-choice").on("click", function () {
         var $choice = $(this);
-        $block.find(".wp-survey-choice").removeClass("selected");
-        $choice.addClass("selected");
-        $choice.find('input[type="radio"]').prop("checked", true);
+        var choiceId = $choice.data("choice-id");
 
-        responses[questionId] = $choice.data("choice-id");
+        if (allowMultiple) {
+          // Multiple choice - toggle selection
+          $choice.toggleClass("selected");
+          $choice
+            .find('input[type="checkbox"]')
+            .prop("checked", $choice.hasClass("selected"));
+
+          // Update responses array
+          var selectedChoices = [];
+          $block.find(".wp-survey-choice.selected").each(function () {
+            selectedChoices.push($(this).data("choice-id"));
+          });
+
+          if (selectedChoices.length > 0) {
+            responses[questionId] = selectedChoices;
+          } else {
+            delete responses[questionId];
+          }
+        } else {
+          // Single choice - radio button behavior
+          $block.find(".wp-survey-choice").removeClass("selected");
+          $choice.addClass("selected");
+          $choice.find('input[type="radio"]').prop("checked", true);
+          responses[questionId] = [choiceId];
+        }
 
         updateProgress();
         checkAllAnswered();
@@ -351,10 +403,16 @@ jQuery(document).ready(function ($) {
 
       var responsesArray = [];
       for (var qId in responses) {
-        responsesArray.push({
-          question_id: qId,
-          choice_id: responses[qId],
-        });
+        var choiceIds = responses[qId];
+        // Handle both single choice (array with one item) and multiple choices (array with multiple items)
+        if (Array.isArray(choiceIds)) {
+          choiceIds.forEach(function (choiceId) {
+            responsesArray.push({
+              question_id: qId,
+              choice_id: choiceId,
+            });
+          });
+        }
       }
 
       $.post(

@@ -129,6 +129,15 @@ jQuery(document).ready(function ($) {
                 <div class="wp-survey-question-content">
                     <input type="text" class="question-text large-text" placeholder="Enter your question here...">
                     
+                    <div class="wp-survey-question-settings">
+                        <label class="wp-survey-toggle">
+                            <input type="checkbox" class="question-allow-multiple">
+                            <span class="wp-survey-toggle-slider"></span>
+                            <span class="wp-survey-toggle-label">Allow Multiple Choices</span>
+                        </label>
+                        <p class="description">Enable this to let users select multiple answers for this question</p>
+                    </div>
+                    
                     <div class="wp-survey-question-choices">
                         <h4>Choices for this question:</h4>
                         <button type="button" class="button add-choice-btn">Add Choice</button>
@@ -157,6 +166,9 @@ jQuery(document).ready(function ($) {
       question_id: questionId,
       survey_id: surveyId,
       question_text: $item.find(".question-text").val(),
+      allow_multiple: $item.find(".question-allow-multiple").is(":checked")
+        ? 1
+        : 0,
       sort_order: $item.index(),
     };
 
