@@ -58,11 +58,11 @@
 }
 
 .wp-survey-intro-content {
-  padding: 20px 30px;
+  padding: 20px 25px 30px;
   text-align: center;
 }
 
-.wp-survey-intro-content .post-content h1 {
+.wp-survey-intro-content h1 {
   margin-top: 15px !important;
   margin-bottom: 15px !important;
 }
