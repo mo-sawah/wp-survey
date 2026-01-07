@@ -94,6 +94,11 @@ class WP_Survey_Activator {
         // ============================================
         $questions_table = $wpdb->prefix . 'survey_questions';
         
+        // ============================================
+        // UPDATE QUESTIONS TABLE
+        // ============================================
+        $questions_table = $wpdb->prefix . 'survey_questions';
+        
         // Check if questions table exists first
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$questions_table'");
         if ($table_exists) {
@@ -102,6 +107,13 @@ class WP_Survey_Activator {
             if (empty($column_exists)) {
                 $wpdb->query("ALTER TABLE $questions_table ADD COLUMN allow_multiple tinyint(1) DEFAULT 0 AFTER question_text");
             }
+
+            // START NEW CODE: Check and add max_choices
+            $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $questions_table LIKE 'max_choices'");
+            if (empty($column_exists)) {
+                $wpdb->query("ALTER TABLE $questions_table ADD COLUMN max_choices int(11) DEFAULT 0 AFTER allow_multiple");
+            }
+            // END NEW CODE
         }
     }
 }
