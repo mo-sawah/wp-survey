@@ -51,6 +51,15 @@ class WP_Survey_Admin {
             'wp-survey-emails',
             [$this, 'render_emails_page']
         );
+        
+        add_submenu_page(
+            'wp-survey',
+            __('Import / Export', 'wp-survey'),
+            __('Import / Export', 'wp-survey'),
+            'manage_options',
+            'wp-survey-import-export',
+            [$this, 'render_import_export_page']
+        );
     }
     
     public function enqueue_admin_assets($hook) {
@@ -247,6 +256,179 @@ class WP_Survey_Admin {
         }
         
         fclose($output);
+        exit;
+    }
+    
+    public function render_import_export_page() {
+        // Handle Import
+        if (isset($_POST['wp_survey_import']) && check_admin_referer('wp_survey_import_nonce')) {
+            $result = $this->handle_import();
+            if ($result['success']) {
+                wp_redirect(admin_url('admin.php?page=wp-survey-import-export&imported=success&survey_id=' . $result['survey_id']));
+                exit;
+            } else {
+                wp_redirect(admin_url('admin.php?page=wp-survey-import-export&import_error=' . urlencode($result['message'])));
+                exit;
+            }
+        }
+        
+        // Handle Export
+        if (isset($_POST['wp_survey_export']) && check_admin_referer('wp_survey_export_nonce')) {
+            $this->handle_export();
+        }
+        
+        include WP_SURVEY_PLUGIN_DIR . 'admin/views/survey-import-export.php';
+    }
+    
+    private function handle_import() {
+        if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+            return ['success' => false, 'message' => __('File upload failed', 'wp-survey')];
+        }
+        
+        $file = $_FILES['import_file']['tmp_name'];
+        $json_data = file_get_contents($file);
+        $data = json_decode($json_data, true);
+        
+        if (!$data || !isset($data['survey']) || !isset($data['questions'])) {
+            return ['success' => false, 'message' => __('Invalid JSON format', 'wp-survey')];
+        }
+        
+        // Create survey
+        $survey_data = [
+            'title' => sanitize_text_field($data['survey']['title']),
+            'description' => sanitize_textarea_field($data['survey']['description']),
+            'question' => isset($data['survey']['question']) ? sanitize_textarea_field($data['survey']['question']) : '',
+            'banner_image' => isset($data['survey']['banner_image']) ? esc_url_raw($data['survey']['banner_image']) : '',
+            'facebook_page_url' => isset($data['survey']['facebook_page_url']) ? esc_url_raw($data['survey']['facebook_page_url']) : '',
+            'language' => sanitize_text_field($data['survey']['language']),
+            'survey_type' => sanitize_text_field($data['survey']['survey_type']),
+            'display_mode' => isset($data['survey']['display_mode']) ? sanitize_text_field($data['survey']['display_mode']) : 'multi-step',
+            'intro_enabled' => isset($data['survey']['intro_enabled']) ? intval($data['survey']['intro_enabled']) : 1
+        ];
+        
+        $survey_id = WP_Survey_Database::create_survey($survey_data);
+        
+        if (!$survey_id) {
+            return ['success' => false, 'message' => __('Failed to create survey', 'wp-survey')];
+        }
+        
+        // Create questions and choices
+        if ($survey_data['survey_type'] === 'multi-question') {
+            foreach ($data['questions'] as $q_index => $question) {
+                $question_data = [
+                    'survey_id' => $survey_id,
+                    'question_text' => sanitize_textarea_field($question['question_text']),
+                    'allow_multiple' => isset($question['allow_multiple']) ? intval($question['allow_multiple']) : 0,
+                    'sort_order' => $q_index
+                ];
+                
+                $question_id = WP_Survey_Database::create_question($question_data);
+                
+                if ($question_id && isset($question['choices'])) {
+                    foreach ($question['choices'] as $c_index => $choice) {
+                        $choice_data = [
+                            'survey_id' => $survey_id,
+                            'question_id' => $question_id,
+                            'title' => sanitize_text_field($choice['title']),
+                            'description_1' => isset($choice['description_1']) ? sanitize_textarea_field($choice['description_1']) : '',
+                            'description_2' => isset($choice['description_2']) ? sanitize_textarea_field($choice['description_2']) : '',
+                            'image_url' => isset($choice['image_url']) ? esc_url_raw($choice['image_url']) : '',
+                            'sort_order' => $c_index
+                        ];
+                        
+                        WP_Survey_Database::create_choice($choice_data);
+                    }
+                }
+            }
+        } else {
+            // Simple survey - create choices without questions
+            if (isset($data['choices'])) {
+                foreach ($data['choices'] as $c_index => $choice) {
+                    $choice_data = [
+                        'survey_id' => $survey_id,
+                        'question_id' => null,
+                        'title' => sanitize_text_field($choice['title']),
+                        'description_1' => isset($choice['description_1']) ? sanitize_textarea_field($choice['description_1']) : '',
+                        'description_2' => isset($choice['description_2']) ? sanitize_textarea_field($choice['description_2']) : '',
+                        'image_url' => isset($choice['image_url']) ? esc_url_raw($choice['image_url']) : '',
+                        'sort_order' => $c_index
+                    ];
+                    
+                    WP_Survey_Database::create_choice($choice_data);
+                }
+            }
+        }
+        
+        return ['success' => true, 'survey_id' => $survey_id];
+    }
+    
+    private function handle_export() {
+        $survey_id = intval($_POST['survey_id']);
+        $survey = WP_Survey_Database::get_survey($survey_id);
+        
+        if (!$survey) {
+            wp_die(__('Survey not found', 'wp-survey'));
+        }
+        
+        $export_data = [
+            'version' => '1.0',
+            'exported_at' => current_time('mysql'),
+            'survey' => [
+                'title' => $survey->title,
+                'description' => $survey->description,
+                'question' => $survey->question,
+                'banner_image' => $survey->banner_image,
+                'facebook_page_url' => $survey->facebook_page_url,
+                'language' => $survey->language,
+                'survey_type' => $survey->survey_type,
+                'display_mode' => $survey->display_mode,
+                'intro_enabled' => $survey->intro_enabled
+            ]
+        ];
+        
+        if ($survey->survey_type === 'multi-question') {
+            $questions = WP_Survey_Database::get_questions($survey_id);
+            $export_data['questions'] = [];
+            
+            foreach ($questions as $question) {
+                $choices = WP_Survey_Database::get_choices($survey_id, $question->id);
+                $choices_array = [];
+                
+                foreach ($choices as $choice) {
+                    $choices_array[] = [
+                        'title' => $choice->title,
+                        'description_1' => $choice->description_1,
+                        'description_2' => $choice->description_2,
+                        'image_url' => $choice->image_url
+                    ];
+                }
+                
+                $export_data['questions'][] = [
+                    'question_text' => $question->question_text,
+                    'allow_multiple' => $question->allow_multiple,
+                    'choices' => $choices_array
+                ];
+            }
+        } else {
+            // Simple survey
+            $choices = WP_Survey_Database::get_choices($survey_id);
+            $export_data['choices'] = [];
+            
+            foreach ($choices as $choice) {
+                $export_data['choices'][] = [
+                    'title' => $choice->title,
+                    'description_1' => $choice->description_1,
+                    'description_2' => $choice->description_2,
+                    'image_url' => $choice->image_url
+                ];
+            }
+        }
+        
+        $filename = sanitize_title($survey->title) . '-' . date('Y-m-d') . '.json';
+        
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        echo json_encode($export_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
     }
 }

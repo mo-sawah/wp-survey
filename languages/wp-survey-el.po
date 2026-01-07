@@ -384,3 +384,82 @@ msgstr "Αποτελέσματα"
 
 msgid "Export Emails"
 msgstr "Εξαγωγή Email"
+
+# ============================================
+# IMPORT / EXPORT
+# ============================================
+
+msgid "Import / Export"
+msgstr "Εισαγωγή / Εξαγωγή"
+
+msgid "Import Survey"
+msgstr "Εισαγωγή Ψηφοφορίας"
+
+msgid "Upload a JSON file to import a complete survey with all questions and choices."
+msgstr "Ανεβάστε ένα αρχείο JSON για να εισάγετε μια πλήρη ψηφοφορία με όλες τις ερωτήσεις και επιλογές."
+
+msgid "Select JSON File"
+msgstr "Επιλέξτε Αρχείο JSON"
+
+msgid "Upload a .json file exported from WP Survey"
+msgstr "Ανεβάστε ένα αρχείο .json που εξήχθη από το WP Survey"
+
+msgid "Import Survey"
+msgstr "Εισαγωγή Ψηφοφορίας"
+
+msgid "Survey imported successfully!"
+msgstr "Η ψηφοφορία εισήχθη επιτυχώς!"
+
+msgid "Export Survey"
+msgstr "Εξαγωγή Ψηφοφορίας"
+
+msgid "Export an existing survey to a JSON file that can be imported later or shared."
+msgstr "Εξάγετε μια υπάρχουσα ψηφοφορία σε αρχείο JSON που μπορεί να εισαχθεί αργότερα ή να κοινοποιηθεί."
+
+msgid "Select Survey"
+msgstr "Επιλογή Ψηφοφορίας"
+
+msgid "Import File Format"
+msgstr "Μορφή Αρχείου Εισαγωγής"
+
+msgid "The JSON file should contain:"
+msgstr "Το αρχείο JSON πρέπει να περιέχει:"
+
+msgid "Survey details (title, description, type)"
+msgstr "Λεπτομέρειες ψηφοφορίας (τίτλος, περιγραφή, τύπος)"
+
+msgid "Questions with allow_multiple setting"
+msgstr "Ερωτήσεις με ρύθμιση πολλαπλής επιλογής"
+
+msgid "Choices for each question"
+msgstr "Επιλογές για κάθε ερώτηση"
+
+msgid "Images (optional)"
+msgstr "Εικόνες (προαιρετικό)"
+
+msgid "Tips"
+msgstr "Συμβουλές"
+
+msgid "Export surveys for backup"
+msgstr "Εξαγωγή ψηφοφοριών για αντίγραφα ασφαλείας"
+
+msgid "Share surveys between sites"
+msgstr "Κοινοποίηση ψηφοφοριών μεταξύ ιστότοπων"
+
+msgid "Import creates a new survey"
+msgstr "Η εισαγωγή δημιουργεί νέα ψηφοφορία"
+
+msgid "Images must be re-uploaded"
+msgstr "Οι εικόνες πρέπει να επαναφορτωθούν"
+
+msgid "File upload failed"
+msgstr "Η μεταφόρτωση αρχείου απέτυχε"
+
+msgid "Invalid JSON format"
+msgstr "Μη έγκυρη μορφή JSON"
+
+msgid "Failed to create survey"
+msgstr "Αποτυχία δημιουργίας ψηφοφορίας"
+
+msgid "Survey not found"
+msgstr "Η ψηφοφορία δεν βρέθηκε"
