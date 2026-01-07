@@ -1,4 +1,25 @@
 jQuery(document).ready(function ($) {
+  // Survey Type Toggle
+  function toggleSurveyTypeFields() {
+    var surveyType = $("#survey_type").val();
+
+    if (surveyType === "multi-question") {
+      $(".simple-survey-field").hide();
+      $(".multi-question-field").show();
+      $("#question").removeAttr("required");
+    } else {
+      $(".simple-survey-field").show();
+      $(".multi-question-field").hide();
+      $("#question").attr("required", "required");
+    }
+  }
+
+  // Initial state on page load
+  if ($("#survey_type").length) {
+    toggleSurveyTypeFields();
+    $("#survey_type").on("change", toggleSurveyTypeFields);
+  }
+
   // Upload Banner Image
   $("#upload-banner-btn").on("click", function (e) {
     e.preventDefault();
