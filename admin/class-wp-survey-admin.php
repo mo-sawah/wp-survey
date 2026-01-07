@@ -164,10 +164,12 @@ class WP_Survey_Admin {
         
         $question_id = isset($_POST['question_id']) ? intval($_POST['question_id']) : 0;
         
+        // In ajax_save_question()
         $data = [
             'survey_id' => intval($_POST['survey_id']),
             'question_text' => sanitize_textarea_field($_POST['question_text']),
             'allow_multiple' => isset($_POST['allow_multiple']) ? intval($_POST['allow_multiple']) : 0,
+            'max_choices' => isset($_POST['max_choices']) ? intval($_POST['max_choices']) : 0, /* <--- ADD THIS */
             'sort_order' => intval($_POST['sort_order'])
         ];
         

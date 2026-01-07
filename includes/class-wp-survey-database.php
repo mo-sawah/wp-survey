@@ -33,12 +33,13 @@ class WP_Survey_Database {
         ) $charset_collate;";
         dbDelta($sql);
         
-        // Create questions table (for multi-question surveys)
+        // In create_tables()
         $sql = "CREATE TABLE IF NOT EXISTS $questions_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             survey_id bigint(20) NOT NULL,
             question_text text NOT NULL,
             allow_multiple tinyint(1) DEFAULT 0,
+            max_choices int(11) DEFAULT 0,  /* <--- ADD THIS LINE */
             sort_order int(11) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -167,10 +168,12 @@ class WP_Survey_Database {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_questions';
         
+        // In create_question()
         $wpdb->insert($table, [
             'survey_id' => intval($data['survey_id']),
             'question_text' => sanitize_textarea_field($data['question_text']),
             'allow_multiple' => isset($data['allow_multiple']) ? intval($data['allow_multiple']) : 0,
+            'max_choices' => isset($data['max_choices']) ? intval($data['max_choices']) : 0, /* <--- ADD THIS */
             'sort_order' => intval($data['sort_order'])
         ]);
         
@@ -181,9 +184,11 @@ class WP_Survey_Database {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_questions';
         
+        // In update_question()
         return $wpdb->update($table, [
             'question_text' => sanitize_textarea_field($data['question_text']),
             'allow_multiple' => isset($data['allow_multiple']) ? intval($data['allow_multiple']) : 0,
+            'max_choices' => isset($data['max_choices']) ? intval($data['max_choices']) : 0, /* <--- ADD THIS */
             'sort_order' => intval($data['sort_order'])
         ], ['id' => $id]);
     }

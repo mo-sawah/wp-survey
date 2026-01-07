@@ -56,9 +56,10 @@
             <div class="wp-survey-content">
                 <?php foreach ($questions_data as $index => $q_data): ?>
                 <div class="wp-survey-question-step <?php echo $index === 0 ? 'active' : ''; ?>" 
-                     data-question-index="<?php echo $index; ?>" 
-                     data-question-id="<?php echo $q_data['question']->id; ?>"
-                     data-allow-multiple="<?php echo $q_data['question']->allow_multiple ? '1' : '0'; ?>">
+                    data-question-index="<?php echo $index; ?>" 
+                    data-question-id="<?php echo $q_data['question']->id; ?>"
+                    data-allow-multiple="<?php echo $q_data['question']->allow_multiple ? '1' : '0'; ?>"
+                    data-max-choices="<?php echo esc_attr(isset($q_data['question']->max_choices) ? $q_data['question']->max_choices : 0); ?>"> <h2 class="wp-survey-question"><?php echo esc_html($q_data['question']->question_text); ?></h2>
                     
                     <h2 class="wp-survey-question"><?php echo esc_html($q_data['question']->question_text); ?></h2>
                     

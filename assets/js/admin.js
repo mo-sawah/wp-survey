@@ -118,35 +118,28 @@ jQuery(document).ready(function ($) {
 
     var html = `
             <div class="wp-survey-question-item" data-id="0">
-                <div class="wp-survey-question-header">
-                    <span class="wp-survey-question-drag">⋮⋮</span>
-                    <span class="wp-survey-question-number">Question ${questionNumber}</span>
-                    <div class="wp-survey-question-actions">
-                        <button type="button" class="button save-question-btn">Save Question</button>
-                        <button type="button" class="button delete-question-btn">Delete</button>
-                    </div>
-                </div>
                 <div class="wp-survey-question-content">
                     <input type="text" class="question-text large-text" placeholder="Enter your question here...">
                     
                     <div class="wp-survey-question-settings">
-                        <label class="wp-survey-toggle">
-                            <input type="checkbox" class="question-allow-multiple">
-                            <span class="wp-survey-toggle-slider"></span>
-                            <span class="wp-survey-toggle-label">Allow Multiple Choices</span>
-                        </label>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <label class="wp-survey-toggle">
+                                <input type="checkbox" class="question-allow-multiple">
+                                <span class="wp-survey-toggle-slider"></span>
+                                <span class="wp-survey-toggle-label">Allow Multiple Choices</span>
+                            </label>
+
+                            <div class="wp-survey-max-choices-box" style="display: none;">
+                                <label style="font-weight: 600; font-size: 13px;">
+                                    Max Selection:
+                                    <input type="number" class="question-max-choices small-text" min="0" value="0" style="width: 60px; margin-left: 5px;">
+                                </label>
+                                <span class="description" style="font-size: 11px; display: block; margin-top: 2px;">0 = Unlimited</span>
+                            </div>
+                        </div>
                         <p class="description">Enable this to let users select multiple answers for this question</p>
                     </div>
-                    
-                    <div class="wp-survey-question-choices">
-                        <h4>Choices for this question:</h4>
-                        <button type="button" class="button add-choice-btn">Add Choice</button>
-                        
-                        <div class="choices-list">
-                            <p class="wp-survey-no-choices">No choices yet</p>
-                        </div>
                     </div>
-                </div>
             </div>
         `;
 
@@ -169,6 +162,7 @@ jQuery(document).ready(function ($) {
       allow_multiple: $item.find(".question-allow-multiple").is(":checked")
         ? 1
         : 0,
+      max_choices: $item.find(".question-max-choices").val(), // <--- ADD THIS LINE
       sort_order: $item.index(),
     };
 
@@ -374,4 +368,15 @@ jQuery(document).ready(function ($) {
         .text("Question " + (index + 1));
     });
   }
+  // Toggle Max Choices Box Visibility
+  $(document).on("change", ".question-allow-multiple", function () {
+    var $box = $(this)
+      .closest(".wp-survey-question-settings")
+      .find(".wp-survey-max-choices-box");
+    if ($(this).is(":checked")) {
+      $box.show();
+    } else {
+      $box.hide();
+    }
+  });
 });

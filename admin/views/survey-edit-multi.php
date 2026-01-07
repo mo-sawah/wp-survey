@@ -127,12 +127,24 @@
                                 <input type="text" class="question-text large-text" placeholder="<?php _e('Enter your question here...', 'wp-survey'); ?>" value="<?php echo esc_attr($question->question_text); ?>">
                                 
                                 <div class="wp-survey-question-settings">
-                                    <label class="wp-survey-toggle">
-                                        <input type="checkbox" class="question-allow-multiple" <?php echo ($question->allow_multiple) ? 'checked' : ''; ?>>
-                                        <span class="wp-survey-toggle-slider"></span>
-                                        <span class="wp-survey-toggle-label"><?php _e('Allow Multiple Choices', 'wp-survey'); ?></span>
-                                    </label>
-                                    <p class="description"><?php _e('Enable this to let users select multiple answers for this question', 'wp-survey'); ?></p>
+                                    <div style="display: flex; align-items: center; gap: 20px;">
+                                        <label class="wp-survey-toggle">
+                                            <input type="checkbox" class="question-allow-multiple" <?php echo ($question->allow_multiple) ? 'checked' : ''; ?>>
+                                            <span class="wp-survey-toggle-slider"></span>
+                                            <span class="wp-survey-toggle-label"><?php _e('Allow Multiple Choices', 'wp-survey'); ?></span>
+                                        </label>
+
+                                        <div class="wp-survey-max-choices-box" style="<?php echo (!$question->allow_multiple) ? 'display:none;' : ''; ?>">
+                                            <label style="font-weight: 600; font-size: 13px;">
+                                                <?php _e('Max Selection:', 'wp-survey'); ?>
+                                                <input type="number" class="question-max-choices small-text" min="0" 
+                                                    value="<?php echo isset($question->max_choices) ? esc_attr($question->max_choices) : '0'; ?>" 
+                                                    style="width: 60px; margin-left: 5px;">
+                                            </label>
+                                            <span class="description" style="font-size: 11px; display: block;"><?php _e('0 = Unlimited', 'wp-survey'); ?></span>
+                                        </div>
+                                    </div>
+                                    <p class="description"><?php _e('Enable this to let users select multiple answers.', 'wp-survey'); ?></p>
                                 </div>
                                 
                                 <div class="wp-survey-question-choices">
