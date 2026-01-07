@@ -336,10 +336,11 @@
 }
 
 .wp-survey-question {
-  font-size: 22px;
-  font-weight: 600;
+  margin-top: -20px !important;
+  font-size: 20px;
+  font-weight: 600 !important;
   color: #1f2937;
-  margin: 0 0 12px 0;
+  margin: 0 0 15px 0;
 }
 
 .wp-survey-question-hint {
