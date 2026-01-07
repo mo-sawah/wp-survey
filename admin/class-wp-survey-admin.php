@@ -6,10 +6,11 @@ class WP_Survey_Admin {
     public function __construct() {
         add_action('admin_menu', [$this, 'add_admin_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
-        add_action('wp_ajax_wp_survey_save', [$this, 'ajax_save_survey']);
         add_action('wp_ajax_wp_survey_delete', [$this, 'ajax_delete_survey']);
         add_action('wp_ajax_wp_survey_save_choice', [$this, 'ajax_save_choice']);
         add_action('wp_ajax_wp_survey_delete_choice', [$this, 'ajax_delete_choice']);
+        add_action('wp_ajax_wp_survey_save_question', [$this, 'ajax_save_question']);
+        add_action('wp_ajax_wp_survey_delete_question', [$this, 'ajax_delete_question']);
         add_action('wp_ajax_wp_survey_export_emails', [$this, 'ajax_export_emails']);
     }
     
@@ -81,12 +82,15 @@ class WP_Survey_Admin {
             $survey_id = isset($_POST['survey_id']) ? intval($_POST['survey_id']) : 0;
             
             $data = [
-                'title' => sanitize_text_field(wp_unslash($_POST['title'])),
-                'description' => sanitize_textarea_field(wp_unslash($_POST['description'])),
-                'question' => sanitize_textarea_field(wp_unslash($_POST['question'])),
-                'banner_image' => esc_url_raw(wp_unslash($_POST['banner_image'])),
-                'facebook_page_url' => esc_url_raw(wp_unslash($_POST['facebook_page_url'])),
-                'language' => sanitize_text_field(wp_unslash($_POST['language']))
+                'title' => sanitize_text_field($_POST['title']),
+                'description' => sanitize_textarea_field($_POST['description']),
+                'question' => isset($_POST['question']) ? sanitize_textarea_field($_POST['question']) : '',
+                'banner_image' => esc_url_raw($_POST['banner_image']),
+                'facebook_page_url' => esc_url_raw($_POST['facebook_page_url']),
+                'language' => sanitize_text_field($_POST['language']),
+                'survey_type' => sanitize_text_field($_POST['survey_type']),
+                'display_mode' => sanitize_text_field($_POST['display_mode']),
+                'intro_enabled' => isset($_POST['intro_enabled']) ? 1 : 0
             ];
             
             if ($survey_id) {
@@ -104,10 +108,17 @@ class WP_Survey_Admin {
         
         $survey_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         $survey = $survey_id ? WP_Survey_Database::get_survey($survey_id) : null;
-        $choices = $survey_id ? WP_Survey_Database::get_choices($survey_id) : [];
-        $stats = $survey_id ? WP_Survey_Database::get_survey_stats($survey_id) : null;
         
-        include WP_SURVEY_PLUGIN_DIR . 'admin/views/survey-edit.php';
+        // Get questions for multi-question surveys
+        if ($survey && $survey->survey_type === 'multi-question') {
+            $questions = WP_Survey_Database::get_questions($survey_id);
+            include WP_SURVEY_PLUGIN_DIR . 'admin/views/survey-edit-multi.php';
+        } else {
+            // Simple survey
+            $choices = $survey_id ? WP_Survey_Database::get_choices($survey_id) : [];
+            $stats = $survey_id ? WP_Survey_Database::get_survey_stats($survey_id) : null;
+            include WP_SURVEY_PLUGIN_DIR . 'admin/views/survey-edit.php';
+        }
     }
     
     public function render_emails_page() {
@@ -120,34 +131,6 @@ class WP_Survey_Admin {
         }
         
         include WP_SURVEY_PLUGIN_DIR . 'admin/views/emails-list.php';
-    }
-    
-    public function ajax_save_survey() {
-        check_ajax_referer('wp_survey_nonce', 'nonce');
-        
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'Unauthorized']);
-        }
-        
-        $survey_id = isset($_POST['survey_id']) ? intval($_POST['survey_id']) : 0;
-        
-        $data = [
-            'title' => sanitize_text_field(wp_unslash($_POST['title'])),
-            'description' => sanitize_textarea_field(wp_unslash($_POST['description'])),
-            'question' => sanitize_textarea_field(wp_unslash($_POST['question'])),
-            'banner_image' => esc_url_raw(wp_unslash($_POST['banner_image'])),
-            'facebook_page_url' => esc_url_raw(wp_unslash($_POST['facebook_page_url'])),
-            'language' => sanitize_text_field(wp_unslash($_POST['language']))
-        ];
-        
-        if ($survey_id) {
-            WP_Survey_Database::update_survey($survey_id, $data);
-            $id = $survey_id;
-        } else {
-            $id = WP_Survey_Database::create_survey($data);
-        }
-        
-        wp_send_json_success(['id' => $id, 'message' => 'Survey saved successfully']);
     }
     
     public function ajax_delete_survey() {
@@ -163,6 +146,44 @@ class WP_Survey_Admin {
         wp_send_json_success(['message' => 'Survey deleted successfully']);
     }
     
+    public function ajax_save_question() {
+        check_ajax_referer('wp_survey_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized']);
+        }
+        
+        $question_id = isset($_POST['question_id']) ? intval($_POST['question_id']) : 0;
+        
+        $data = [
+            'survey_id' => intval($_POST['survey_id']),
+            'question_text' => sanitize_textarea_field($_POST['question_text']),
+            'sort_order' => intval($_POST['sort_order'])
+        ];
+        
+        if ($question_id) {
+            WP_Survey_Database::update_question($question_id, $data);
+            $id = $question_id;
+        } else {
+            $id = WP_Survey_Database::create_question($data);
+        }
+        
+        wp_send_json_success(['id' => $id, 'message' => 'Question saved successfully']);
+    }
+    
+    public function ajax_delete_question() {
+        check_ajax_referer('wp_survey_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized']);
+        }
+        
+        $question_id = intval($_POST['question_id']);
+        WP_Survey_Database::delete_question($question_id);
+        
+        wp_send_json_success(['message' => 'Question deleted successfully']);
+    }
+    
     public function ajax_save_choice() {
         check_ajax_referer('wp_survey_nonce', 'nonce');
         
@@ -174,10 +195,11 @@ class WP_Survey_Admin {
         
         $data = [
             'survey_id' => intval($_POST['survey_id']),
-            'title' => sanitize_text_field(wp_unslash($_POST['title'])),
-            'description_1' => sanitize_textarea_field(wp_unslash($_POST['description_1'])),
-            'description_2' => sanitize_textarea_field(wp_unslash($_POST['description_2'])),
-            'image_url' => esc_url_raw(wp_unslash($_POST['image_url'])),
+            'question_id' => isset($_POST['question_id']) ? intval($_POST['question_id']) : null,
+            'title' => sanitize_text_field($_POST['title']),
+            'description_1' => sanitize_textarea_field($_POST['description_1']),
+            'description_2' => sanitize_textarea_field($_POST['description_2']),
+            'image_url' => esc_url_raw($_POST['image_url']),
             'sort_order' => intval($_POST['sort_order'])
         ];
         

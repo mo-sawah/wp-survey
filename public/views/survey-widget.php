@@ -45,7 +45,7 @@
             <?php if ($survey->facebook_page_url): ?>
             <div class="wp-survey-facebook-box">
                 <div class="wp-survey-facebook-icon">👍</div>
-                <p class="wp-survey-facebook-desc"><?php _e('Follow our page to vote', 'wp-survey'); ?></p>
+                <p class="wp-survey-facebook-desc"><?php _e('Ακολουθήστε τη σελίδα μας για να ψηφίσετε', 'wp-survey'); ?></p>
                 
                 <div class="wp-survey-facebook-plugin">
                     <iframe src="https://www.facebook.com/plugins/page.php?href=<?php echo urlencode($survey->facebook_page_url); ?>&tabs=&width=300&height=130&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=false&appId" width="300" height="130" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
@@ -53,12 +53,12 @@
                 
                 <label class="wp-survey-facebook-confirm">
                     <input type="checkbox" class="wp-survey-facebook-checkbox">
-                    <span><?php _e('✓ I followed', 'wp-survey'); ?></span>
+                    <span><?php _e('✓ Ακολούθησα', 'wp-survey'); ?></span>
                 </label>
             </div>
             <?php else: ?>
             <div class="wp-survey-facebook-box">
-                <p class="wp-survey-facebook-desc"><?php _e('Click Submit to vote', 'wp-survey'); ?></p>
+                <p class="wp-survey-facebook-desc"><?php _e('Κάντε κλικ στο Υποβολή για να ψηφίσετε', 'wp-survey'); ?></p>
             </div>
             <?php endif; ?>
         </div>
@@ -67,7 +67,7 @@
 
         <div class="wp-survey-buttons">
             <button type="submit" class="wp-survey-button wp-survey-button-primary" disabled>
-                <?php _e('Submit Vote', 'wp-survey'); ?>
+                <?php _e('Υποβολή Ψήφου', 'wp-survey'); ?>
             </button>
         </div>
     </div>

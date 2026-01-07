@@ -17,7 +17,7 @@
         </div>
 
         <div class="wp-survey-progress-wrapper">
-            <div class="wp-survey-progress-text"><?php _e('Question 1 of 1 • 0% Complete', 'wp-survey'); ?></div>
+            <div class="wp-survey-progress-text"><?php _e('Ερώτηση 1 από 1 • 0% Ολοκληρώθηκε', 'wp-survey'); ?></div>
             <div class="wp-survey-progress-bar">
                 <div class="wp-survey-progress-fill" style="width: 0%;"></div>
             </div>
@@ -53,8 +53,8 @@
                 <?php if ($survey->facebook_page_url): ?>
                 <div class="wp-survey-facebook-box">
                     <div class="wp-survey-facebook-icon">👍</div>
-                    <h3 class="wp-survey-facebook-title"><?php _e('Follow our Facebook page to submit your vote!', 'wp-survey'); ?></h3>
-                    <p class="wp-survey-facebook-desc"><?php _e('To enter the draw for an authentic Cyprus League jersey by Stoiximan, simply like our Facebook page and cast your vote below. Only those who complete both steps will be eligible.', 'wp-survey'); ?></p>
+                    <h3 class="wp-survey-facebook-title"><?php _e('Ακολουθήστε τη σελίδα μας στο Facebook για να υποβάλετε την ψήφο σας!', 'wp-survey'); ?></h3>
+                    <p class="wp-survey-facebook-desc"><?php _e('Για να συμμετάσχετε στην κλήρωση για μια αυθεντική φανέλα του Κυπριακού Πρωταθλήματος από τη Stoiximan, απλά κάντε like στη σελίδα μας στο Facebook και ψηφίστε παρακάτω. Μόνο όσοι ολοκληρώσουν και τα δύο βήματα θα είναι επιλέξιμοι.', 'wp-survey'); ?></p>
                     
                     <div class="wp-survey-facebook-plugin">
                         <iframe src="https://www.facebook.com/plugins/page.php?href=<?php echo urlencode($survey->facebook_page_url); ?>&tabs=&width=340&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=false&appId" width="340" height="130" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
@@ -62,12 +62,12 @@
                     
                     <label class="wp-survey-facebook-confirm">
                         <input type="checkbox" class="wp-survey-facebook-checkbox">
-                        <span><?php _e('✓ I have followed the page', 'wp-survey'); ?></span>
+                        <span><?php _e('✓ Ακολούθησα τη σελίδα', 'wp-survey'); ?></span>
                     </label>
                 </div>
                 <?php else: ?>
                 <div class="wp-survey-facebook-box">
-                    <p class="wp-survey-facebook-desc"><?php _e('Click Submit Vote to record your choice', 'wp-survey'); ?></p>
+                    <p class="wp-survey-facebook-desc"><?php _e('Κάντε κλικ στο Υποβολή Ψήφου για να καταγράψετε την επιλογή σας', 'wp-survey'); ?></p>
                 </div>
                 <?php endif; ?>
             </div>
@@ -76,7 +76,7 @@
 
             <div class="wp-survey-buttons">
                 <button type="submit" class="wp-survey-button wp-survey-button-primary" disabled>
-                    <?php _e('Submit Vote', 'wp-survey'); ?> →
+                    <?php _e('Υποβολή Ψήφου', 'wp-survey'); ?> →
                 </button>
             </div>
         </div>
