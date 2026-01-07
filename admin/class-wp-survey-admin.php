@@ -86,14 +86,7 @@ class WP_Survey_Admin {
     }
     
     public function render_add_edit_page() {
-        // Handle BULK SAVE (new improved method)
-        if (isset($_POST['wp_survey_bulk_save']) && check_admin_referer('wp_survey_bulk_save_nonce')) {
-            $this->handle_bulk_save();
-            wp_redirect(admin_url('admin.php?page=wp-survey-edit&id=' . intval($_POST['survey_id']) . '&saved=1'));
-            exit;
-        }
-        
-        // Handle form submission (old method - keep for backward compatibility)
+        // Handle form submission
         if (isset($_POST['wp_survey_save']) && check_admin_referer('wp_survey_save_nonce')) {
             $survey_id = isset($_POST['survey_id']) ? intval($_POST['survey_id']) : 0;
             
@@ -438,96 +431,5 @@ class WP_Survey_Admin {
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         echo json_encode($export_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
-    }
-    
-    private function handle_bulk_save() {
-        $survey_id = intval($_POST['survey_id']);
-        
-        // Update survey details
-        $survey_data = [
-            'title' => sanitize_text_field($_POST['title']),
-            'description' => sanitize_textarea_field($_POST['description']),
-            'display_mode' => sanitize_text_field($_POST['display_mode']),
-            'intro_enabled' => isset($_POST['intro_enabled']) ? 1 : 0,
-            'banner_image' => isset($_POST['banner_image']) ? esc_url_raw($_POST['banner_image']) : '',
-            'facebook_page_url' => isset($_POST['facebook_page_url']) ? esc_url_raw($_POST['facebook_page_url']) : ''
-        ];
-        
-        WP_Survey_Database::update_survey($survey_id, $survey_data);
-        
-        // Get existing questions to track what to delete
-        $existing_questions = WP_Survey_Database::get_questions($survey_id);
-        $existing_question_ids = array_column($existing_questions, 'id');
-        $kept_question_ids = [];
-        
-        // Save questions and choices
-        if (isset($_POST['questions']) && is_array($_POST['questions'])) {
-            foreach ($_POST['questions'] as $sort_order => $question_data) {
-                $question_id = intval($question_data['id']);
-                
-                $q_data = [
-                    'survey_id' => $survey_id,
-                    'question_text' => sanitize_textarea_field($question_data['question_text']),
-                    'allow_multiple' => isset($question_data['allow_multiple']) ? 1 : 0,
-                    'sort_order' => $sort_order
-                ];
-                
-                if ($question_id > 0) {
-                    // Update existing question
-                    WP_Survey_Database::update_question($question_id, $q_data);
-                    $kept_question_ids[] = $question_id;
-                } else {
-                    // Create new question
-                    $question_id = WP_Survey_Database::create_question($q_data);
-                    $kept_question_ids[] = $question_id;
-                }
-                
-                // Handle choices for this question
-                if (isset($question_data['choices']) && is_array($question_data['choices'])) {
-                    // Get existing choices
-                    $existing_choices = WP_Survey_Database::get_choices($survey_id, $question_id);
-                    $existing_choice_ids = array_column($existing_choices, 'id');
-                    $kept_choice_ids = [];
-                    
-                    foreach ($question_data['choices'] as $c_sort_order => $choice_data) {
-                        $choice_id = intval($choice_data['id']);
-                        
-                        $c_data = [
-                            'survey_id' => $survey_id,
-                            'question_id' => $question_id,
-                            'title' => sanitize_text_field($choice_data['title']),
-                            'description_1' => '',
-                            'description_2' => '',
-                            'image_url' => '',
-                            'sort_order' => $c_sort_order
-                        ];
-                        
-                        if ($choice_id > 0) {
-                            // Update existing choice
-                            WP_Survey_Database::update_choice($choice_id, $c_data);
-                            $kept_choice_ids[] = $choice_id;
-                        } else {
-                            // Create new choice
-                            $choice_id = WP_Survey_Database::create_choice($c_data);
-                            $kept_choice_ids[] = $choice_id;
-                        }
-                    }
-                    
-                    // Delete removed choices
-                    foreach ($existing_choice_ids as $old_choice_id) {
-                        if (!in_array($old_choice_id, $kept_choice_ids)) {
-                            WP_Survey_Database::delete_choice($old_choice_id);
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Delete removed questions
-        foreach ($existing_question_ids as $old_question_id) {
-            if (!in_array($old_question_id, $kept_question_ids)) {
-                WP_Survey_Database::delete_question($old_question_id);
-            }
-        }
     }
 }
