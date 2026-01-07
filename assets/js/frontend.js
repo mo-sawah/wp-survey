@@ -155,18 +155,27 @@ jQuery(document).ready(function ($) {
     $questionSteps.each(function () {
       var $step = $(this);
       var questionId = $step.data("question-id");
-      var allowMultiple = parseInt($step.data("allow-multiple")) === 1; // Convert string to boolean
 
-      $step.find(".wp-survey-choice").on("click", function () {
+      // FIX 1: More robust check for allow-multiple (handles string "1", int 1, or boolean true)
+      var rawAllow = $step.data("allow-multiple");
+      var allowMultiple =
+        rawAllow == 1 || rawAllow === "1" || rawAllow === true;
+
+      $step.find(".wp-survey-choice").on("click", function (e) {
+        // Prevent double triggering if user clicks the input directly
+        if ($(e.target).is("input")) return;
+
         var $choice = $(this);
         var choiceId = $choice.data("choice-id");
 
         if (allowMultiple) {
           // Multiple choice - toggle selection
           $choice.toggleClass("selected");
-          $choice
-            .find('input[type="checkbox"]')
-            .prop("checked", $choice.hasClass("selected"));
+
+          // FIX 2: Find ANY input type (checkbox or radio) and force check it
+          // This fixes the issue if PHP rendered a radio button by mistake
+          var $input = $choice.find("input");
+          $input.prop("checked", $choice.hasClass("selected"));
 
           // Update responses array
           var selectedChoices = [];
@@ -183,7 +192,7 @@ jQuery(document).ready(function ($) {
           // Single choice - radio button behavior
           $step.find(".wp-survey-choice").removeClass("selected");
           $choice.addClass("selected");
-          $choice.find('input[type="radio"]').prop("checked", true);
+          $choice.find("input").prop("checked", true); // FIX: changed from input[type="radio"] to input
           responses[questionId] = [choiceId];
         }
 
