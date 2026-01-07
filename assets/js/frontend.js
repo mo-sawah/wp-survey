@@ -155,7 +155,7 @@ jQuery(document).ready(function ($) {
     $questionSteps.each(function () {
       var $step = $(this);
       var questionId = $step.data("question-id");
-      var allowMultiple = $step.data("allow-multiple");
+      var allowMultiple = parseInt($step.data("allow-multiple")) === 1; // Convert string to boolean
 
       $step.find(".wp-survey-choice").on("click", function () {
         var $choice = $(this);
@@ -350,7 +350,7 @@ jQuery(document).ready(function ($) {
     $questionBlocks.each(function () {
       var $block = $(this);
       var questionId = $block.data("question-id");
-      var allowMultiple = $block.data("allow-multiple");
+      var allowMultiple = parseInt($block.data("allow-multiple")) === 1; // Convert string to boolean
 
       $block.find(".wp-survey-choice").on("click", function () {
         var $choice = $(this);
