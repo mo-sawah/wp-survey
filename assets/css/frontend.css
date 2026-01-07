@@ -58,15 +58,13 @@
 }
 
 .wp-survey-intro-content {
-  padding: 40px 30px;
+  padding: 20px 30px;
   text-align: center;
 }
 
-.wp-survey-intro-title {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  color: #1f2937;
+.wp-survey-intro-content .post-content h1 {
+  margin-top: 15px !important;
+  margin-bottom: 15px !important;
 }
 
 .wp-survey-intro-description {
@@ -101,7 +99,7 @@
 
 .wp-survey-start-btn {
   font-size: 18px !important;
-  padding: 16px 48px !important;
+  padding: 10px 48px !important;
 }
 
 /* Question Steps (Multi-Step Mode) */
