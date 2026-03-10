@@ -22,14 +22,13 @@
                             <th><label for="title"><?php _e('Survey Title', 'wp-survey'); ?></label></th>
                             <td>
                                 <input type="text" id="title" name="title" class="regular-text" value="<?php echo $survey ? esc_attr($survey->title) : ''; ?>" required>
-                                <p class="description"><?php _e('This appears in the survey intro screen', 'wp-survey'); ?></p>
+                                <p class="description"><?php _e('Appears in the survey intro screen', 'wp-survey'); ?></p>
                             </td>
                         </tr>
                         <tr>
                             <th><label for="description"><?php _e('Description', 'wp-survey'); ?></label></th>
                             <td>
                                 <textarea id="description" name="description" rows="3" class="large-text"><?php echo $survey ? esc_textarea($survey->description) : ''; ?></textarea>
-                                <p class="description"><?php _e('Brief description shown in the intro screen', 'wp-survey'); ?></p>
                             </td>
                         </tr>
                         <tr>
@@ -45,14 +44,13 @@
                                 <input type="hidden" id="banner_image" name="banner_image" value="<?php echo $survey && $survey->banner_image ? esc_url($survey->banner_image) : ''; ?>">
                                 <button type="button" class="button" id="upload-banner-btn"><?php _e('Upload Banner Image', 'wp-survey'); ?></button>
                                 <button type="button" class="button" id="remove-banner-btn" style="<?php echo !($survey && $survey->banner_image) ? 'display:none;' : ''; ?>"><?php _e('Remove', 'wp-survey'); ?></button>
-                                <p class="description"><?php _e('Recommended: 1200x400px - This image will be shown in the intro screen', 'wp-survey'); ?></p>
+                                <p class="description"><?php _e('Recommended: 1200x400px', 'wp-survey'); ?></p>
                             </td>
                         </tr>
                         <tr>
                             <th><label for="facebook_page_url"><?php _e('Facebook Page URL', 'wp-survey'); ?></label></th>
                             <td>
                                 <input type="url" id="facebook_page_url" name="facebook_page_url" class="regular-text" value="<?php echo $survey && $survey->facebook_page_url ? esc_url($survey->facebook_page_url) : ''; ?>" placeholder="https://www.facebook.com/YourPageName">
-                                <p class="description"><?php _e('Users will be asked to like/follow your page before submitting', 'wp-survey'); ?></p>
                             </td>
                         </tr>
                         <tr>
@@ -91,6 +89,29 @@
                                 </select>
                             </td>
                         </tr>
+                        
+                        <!-- ====== ALLOW MULTIPLE VOTES ====== -->
+                        <tr>
+                            <th><label><?php _e('Voting Mode', 'wp-survey'); ?></label></th>
+                            <td>
+                                <div class="wp-survey-voting-mode-box">
+                                    <label class="wp-survey-toggle">
+                                        <input type="checkbox" id="allow_multiple_votes" name="allow_multiple_votes" value="1"
+                                            <?php echo ($survey && !empty($survey->allow_multiple_votes)) ? 'checked' : ''; ?>>
+                                        <span class="wp-survey-toggle-slider"></span>
+                                        <span class="wp-survey-toggle-label"><?php _e('Allow Multiple Votes', 'wp-survey'); ?></span>
+                                    </label>
+                                    <p class="description" style="margin-top: 8px;">
+                                        <?php _e('<strong>OFF</strong> — Each visitor can only vote once (cookie-based protection).', 'wp-survey'); ?><br>
+                                        <?php _e('<strong>ON</strong> — Visitors can vote unlimited times. Useful for polls, live events, or testing.', 'wp-survey'); ?>
+                                    </p>
+                                    <div id="multiple-votes-warning" class="notice notice-warning inline" style="<?php echo ($survey && !empty($survey->allow_multiple_votes)) ? '' : 'display:none;'; ?> margin: 8px 0 0 0; padding: 8px 12px;">
+                                        <p style="margin:0;">⚠️ <?php _e('Multiple votes mode is <strong>ON</strong> — there is no duplicate protection for this survey.', 'wp-survey'); ?></p>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        
                     </table>
                     
                     <p class="submit">
@@ -111,7 +132,7 @@
                     <?php if (empty($questions)): ?>
                         <p class="wp-survey-no-questions"><?php _e('No questions yet. Add your first question to get started.', 'wp-survey'); ?></p>
                     <?php else: ?>
-                        <?php foreach ($questions as $q_index => $question): 
+                        <?php foreach ($questions as $q_index => $question):
                             $question_choices = WP_Survey_Database::get_choices($survey->id, $question->id);
                         ?>
                         <div class="wp-survey-question-item" data-id="<?php echo $question->id; ?>">
@@ -133,12 +154,11 @@
                                             <span class="wp-survey-toggle-slider"></span>
                                             <span class="wp-survey-toggle-label"><?php _e('Allow Multiple Choices', 'wp-survey'); ?></span>
                                         </label>
-
                                         <div class="wp-survey-max-choices-box" style="<?php echo (!$question->allow_multiple) ? 'display:none;' : ''; ?>">
                                             <label style="font-weight: 600; font-size: 13px;">
                                                 <?php _e('Max Selection:', 'wp-survey'); ?>
-                                                <input type="number" class="question-max-choices small-text" min="0" 
-                                                    value="<?php echo isset($question->max_choices) ? esc_attr($question->max_choices) : '0'; ?>" 
+                                                <input type="number" class="question-max-choices small-text" min="0"
+                                                    value="<?php echo isset($question->max_choices) ? esc_attr($question->max_choices) : '0'; ?>"
                                                     style="width: 60px; margin-left: 5px;">
                                             </label>
                                             <span class="description" style="font-size: 11px; display: block;"><?php _e('0 = Unlimited', 'wp-survey'); ?></span>
@@ -150,7 +170,6 @@
                                 <div class="wp-survey-question-choices">
                                     <h4><?php _e('Choices for this question:', 'wp-survey'); ?></h4>
                                     <button type="button" class="button add-choice-btn"><?php _e('Add Choice', 'wp-survey'); ?></button>
-                                    
                                     <div class="choices-list">
                                         <?php if (empty($question_choices)): ?>
                                             <p class="wp-survey-no-choices"><?php _e('No choices yet', 'wp-survey'); ?></p>
@@ -198,6 +217,11 @@
                     <label><?php _e('Use this shortcode', 'wp-survey'); ?></label>
                     <code onclick="this.select()">[wp_survey id="<?php echo $survey->id; ?>"]</code>
                 </div>
+                <div style="margin-top: 12px;">
+                    <a href="<?php echo admin_url('admin.php?page=wp-survey-analytics&survey_id=' . $survey->id); ?>" class="button button-secondary" style="width:100%; text-align:center;">
+                        📊 <?php _e('View Analytics', 'wp-survey'); ?>
+                    </a>
+                </div>
             </div>
             
             <div class="wp-survey-card">
@@ -214,7 +238,16 @@
                     <strong><?php _e('Total Questions:', 'wp-survey'); ?></strong><br>
                     <?php echo count($questions); ?>
                 </div>
+                <div class="wp-survey-info-item">
+                    <strong><?php _e('Voting Mode:', 'wp-survey'); ?></strong><br>
+                    <?php if (!empty($survey->allow_multiple_votes)): ?>
+                        <span style="color: #d97706; font-weight: 600;">⚠️ <?php _e('Multiple votes allowed', 'wp-survey'); ?></span>
+                    <?php else: ?>
+                        <span style="color: #059669; font-weight: 600;">🔒 <?php _e('One vote per person', 'wp-survey'); ?></span>
+                    <?php endif; ?>
+                </div>
             </div>
+            
             <?php else: ?>
             <div class="wp-survey-card">
                 <h3><?php _e('Next Steps', 'wp-survey'); ?></h3>
@@ -224,10 +257,21 @@
                     <li><?php _e('Add questions', 'wp-survey'); ?></li>
                     <li><?php _e('Add choices to each question', 'wp-survey'); ?></li>
                     <li><?php _e('Copy the shortcode', 'wp-survey'); ?></li>
-                    <li><?php _e('Add it to any page', 'wp-survey'); ?></li>
                 </ol>
             </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
+
+<script>
+jQuery(document).ready(function($) {
+    $('#allow_multiple_votes').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#multiple-votes-warning').show();
+        } else {
+            $('#multiple-votes-warning').hide();
+        }
+    });
+});
+</script>

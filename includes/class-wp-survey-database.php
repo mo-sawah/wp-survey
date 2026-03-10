@@ -7,10 +7,10 @@ class WP_Survey_Database {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
         
-        $surveys_table = $wpdb->prefix . 'surveys';
-        $questions_table = $wpdb->prefix . 'survey_questions';
-        $choices_table = $wpdb->prefix . 'survey_choices';
-        $responses_table = $wpdb->prefix . 'survey_responses';
+        $surveys_table    = $wpdb->prefix . 'surveys';
+        $questions_table  = $wpdb->prefix . 'survey_questions';
+        $choices_table    = $wpdb->prefix . 'survey_choices';
+        $responses_table  = $wpdb->prefix . 'survey_responses';
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         
@@ -27,19 +27,20 @@ class WP_Survey_Database {
             survey_type varchar(20) DEFAULT 'simple',
             display_mode varchar(20) DEFAULT 'multi-step',
             intro_enabled tinyint(1) DEFAULT 1,
+            allow_multiple_votes tinyint(1) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) $charset_collate;";
         dbDelta($sql);
         
-        // In create_tables()
+        // Create questions table
         $sql = "CREATE TABLE IF NOT EXISTS $questions_table (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             survey_id bigint(20) NOT NULL,
             question_text text NOT NULL,
             allow_multiple tinyint(1) DEFAULT 0,
-            max_choices int(11) DEFAULT 0,  /* <--- ADD THIS LINE */
+            max_choices int(11) DEFAULT 0,
             sort_order int(11) DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -107,15 +108,16 @@ class WP_Survey_Database {
         $table = $wpdb->prefix . 'surveys';
         
         $wpdb->insert($table, [
-            'title' => sanitize_text_field($data['title']),
-            'description' => sanitize_textarea_field($data['description']),
-            'question' => isset($data['question']) ? sanitize_textarea_field($data['question']) : '',
-            'banner_image' => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
-            'facebook_page_url' => isset($data['facebook_page_url']) ? esc_url_raw($data['facebook_page_url']) : '',
-            'language' => sanitize_text_field($data['language']),
-            'survey_type' => isset($data['survey_type']) ? sanitize_text_field($data['survey_type']) : 'simple',
-            'display_mode' => isset($data['display_mode']) ? sanitize_text_field($data['display_mode']) : 'multi-step',
-            'intro_enabled' => isset($data['intro_enabled']) ? intval($data['intro_enabled']) : 1
+            'title'               => sanitize_text_field($data['title']),
+            'description'         => sanitize_textarea_field($data['description']),
+            'question'            => isset($data['question']) ? sanitize_textarea_field($data['question']) : '',
+            'banner_image'        => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
+            'facebook_page_url'   => isset($data['facebook_page_url']) ? esc_url_raw($data['facebook_page_url']) : '',
+            'language'            => sanitize_text_field($data['language']),
+            'survey_type'         => isset($data['survey_type']) ? sanitize_text_field($data['survey_type']) : 'simple',
+            'display_mode'        => isset($data['display_mode']) ? sanitize_text_field($data['display_mode']) : 'multi-step',
+            'intro_enabled'       => isset($data['intro_enabled']) ? intval($data['intro_enabled']) : 1,
+            'allow_multiple_votes' => isset($data['allow_multiple_votes']) ? intval($data['allow_multiple_votes']) : 0,
         ]);
         
         return $wpdb->insert_id;
@@ -126,33 +128,34 @@ class WP_Survey_Database {
         $table = $wpdb->prefix . 'surveys';
         
         return $wpdb->update($table, [
-            'title' => sanitize_text_field($data['title']),
-            'description' => sanitize_textarea_field($data['description']),
-            'question' => isset($data['question']) ? sanitize_textarea_field($data['question']) : '',
-            'banner_image' => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
-            'facebook_page_url' => isset($data['facebook_page_url']) ? esc_url_raw($data['facebook_page_url']) : '',
-            'language' => sanitize_text_field($data['language']),
-            'survey_type' => isset($data['survey_type']) ? sanitize_text_field($data['survey_type']) : 'simple',
-            'display_mode' => isset($data['display_mode']) ? sanitize_text_field($data['display_mode']) : 'multi-step',
-            'intro_enabled' => isset($data['intro_enabled']) ? intval($data['intro_enabled']) : 1
+            'title'               => sanitize_text_field($data['title']),
+            'description'         => sanitize_textarea_field($data['description']),
+            'question'            => isset($data['question']) ? sanitize_textarea_field($data['question']) : '',
+            'banner_image'        => isset($data['banner_image']) ? esc_url_raw($data['banner_image']) : '',
+            'facebook_page_url'   => isset($data['facebook_page_url']) ? esc_url_raw($data['facebook_page_url']) : '',
+            'language'            => sanitize_text_field($data['language']),
+            'survey_type'         => isset($data['survey_type']) ? sanitize_text_field($data['survey_type']) : 'simple',
+            'display_mode'        => isset($data['display_mode']) ? sanitize_text_field($data['display_mode']) : 'multi-step',
+            'intro_enabled'       => isset($data['intro_enabled']) ? intval($data['intro_enabled']) : 1,
+            'allow_multiple_votes' => isset($data['allow_multiple_votes']) ? intval($data['allow_multiple_votes']) : 0,
         ], ['id' => $id]);
     }
     
     public static function delete_survey($id) {
         global $wpdb;
-        $surveys_table = $wpdb->prefix . 'surveys';
+        $surveys_table   = $wpdb->prefix . 'surveys';
         $questions_table = $wpdb->prefix . 'survey_questions';
-        $choices_table = $wpdb->prefix . 'survey_choices';
+        $choices_table   = $wpdb->prefix . 'survey_choices';
         $responses_table = $wpdb->prefix . 'survey_responses';
         
         $wpdb->delete($responses_table, ['survey_id' => $id]);
-        $wpdb->delete($choices_table, ['survey_id' => $id]);
+        $wpdb->delete($choices_table,   ['survey_id' => $id]);
         $wpdb->delete($questions_table, ['survey_id' => $id]);
-        $wpdb->delete($surveys_table, ['id' => $id]);
+        $wpdb->delete($surveys_table,   ['id' => $id]);
     }
     
     // ============================================
-    // QUESTION METHODS (for multi-question surveys)
+    // QUESTION METHODS
     // ============================================
     
     public static function get_questions($survey_id) {
@@ -168,13 +171,12 @@ class WP_Survey_Database {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_questions';
         
-        // In create_question()
         $wpdb->insert($table, [
-            'survey_id' => intval($data['survey_id']),
-            'question_text' => sanitize_textarea_field($data['question_text']),
+            'survey_id'      => intval($data['survey_id']),
+            'question_text'  => sanitize_textarea_field($data['question_text']),
             'allow_multiple' => isset($data['allow_multiple']) ? intval($data['allow_multiple']) : 0,
-            'max_choices' => isset($data['max_choices']) ? intval($data['max_choices']) : 0, /* <--- ADD THIS */
-            'sort_order' => intval($data['sort_order'])
+            'max_choices'    => isset($data['max_choices']) ? intval($data['max_choices']) : 0,
+            'sort_order'     => intval($data['sort_order'])
         ]);
         
         return $wpdb->insert_id;
@@ -184,24 +186,20 @@ class WP_Survey_Database {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_questions';
         
-        // In update_question()
         return $wpdb->update($table, [
-            'question_text' => sanitize_textarea_field($data['question_text']),
+            'question_text'  => sanitize_textarea_field($data['question_text']),
             'allow_multiple' => isset($data['allow_multiple']) ? intval($data['allow_multiple']) : 0,
-            'max_choices' => isset($data['max_choices']) ? intval($data['max_choices']) : 0, /* <--- ADD THIS */
-            'sort_order' => intval($data['sort_order'])
+            'max_choices'    => isset($data['max_choices']) ? intval($data['max_choices']) : 0,
+            'sort_order'     => intval($data['sort_order'])
         ], ['id' => $id]);
     }
     
     public static function delete_question($id) {
         global $wpdb;
         $questions_table = $wpdb->prefix . 'survey_questions';
-        $choices_table = $wpdb->prefix . 'survey_choices';
+        $choices_table   = $wpdb->prefix . 'survey_choices';
         
-        // Delete all choices for this question
-        $wpdb->delete($choices_table, ['question_id' => $id]);
-        
-        // Delete the question
+        $wpdb->delete($choices_table,   ['question_id' => $id]);
         return $wpdb->delete($questions_table, ['id' => $id]);
     }
     
@@ -214,14 +212,11 @@ class WP_Survey_Database {
         $table = $wpdb->prefix . 'survey_choices';
         
         if ($question_id !== null) {
-            // Get choices for a specific question
             return $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM $table WHERE survey_id = %d AND question_id = %d ORDER BY sort_order ASC",
-                $survey_id,
-                $question_id
+                $survey_id, $question_id
             ));
         } else {
-            // Get choices for simple survey (backward compatibility)
             return $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM $table WHERE survey_id = %d AND question_id IS NULL ORDER BY sort_order ASC",
                 $survey_id
@@ -234,13 +229,13 @@ class WP_Survey_Database {
         $table = $wpdb->prefix . 'survey_choices';
         
         $wpdb->insert($table, [
-            'survey_id' => intval($data['survey_id']),
+            'survey_id'   => intval($data['survey_id']),
             'question_id' => isset($data['question_id']) ? intval($data['question_id']) : null,
-            'title' => sanitize_text_field($data['title']),
+            'title'       => sanitize_text_field($data['title']),
             'description_1' => sanitize_textarea_field($data['description_1']),
             'description_2' => sanitize_textarea_field($data['description_2']),
-            'image_url' => esc_url_raw($data['image_url']),
-            'sort_order' => intval($data['sort_order'])
+            'image_url'   => esc_url_raw($data['image_url']),
+            'sort_order'  => intval($data['sort_order'])
         ]);
         
         return $wpdb->insert_id;
@@ -251,11 +246,11 @@ class WP_Survey_Database {
         $table = $wpdb->prefix . 'survey_choices';
         
         return $wpdb->update($table, [
-            'title' => sanitize_text_field($data['title']),
+            'title'       => sanitize_text_field($data['title']),
             'description_1' => sanitize_textarea_field($data['description_1']),
             'description_2' => sanitize_textarea_field($data['description_2']),
-            'image_url' => esc_url_raw($data['image_url']),
-            'sort_order' => intval($data['sort_order'])
+            'image_url'   => esc_url_raw($data['image_url']),
+            'sort_order'  => intval($data['sort_order'])
         ], ['id' => $id]);
     }
     
@@ -271,21 +266,21 @@ class WP_Survey_Database {
     
     public static function save_response($survey_id, $choice_id, $name = '', $email = '', $question_id = null, $session_id = null) {
         global $wpdb;
-        $table = $wpdb->prefix . 'survey_responses';
+        $table        = $wpdb->prefix . 'survey_responses';
         $choices_table = $wpdb->prefix . 'survey_choices';
         
         $wpdb->insert($table, [
-            'survey_id' => intval($survey_id),
+            'survey_id'   => intval($survey_id),
             'question_id' => $question_id ? intval($question_id) : null,
-            'choice_id' => intval($choice_id),
-            'session_id' => $session_id ? sanitize_text_field($session_id) : null,
-            'name' => sanitize_text_field($name),
-            'email' => sanitize_email($email),
-            'ip_address' => $_SERVER['REMOTE_ADDR'],
-            'user_agent' => sanitize_text_field($_SERVER['HTTP_USER_AGENT'])
+            'choice_id'   => intval($choice_id),
+            'session_id'  => $session_id ? sanitize_text_field($session_id) : null,
+            'name'        => sanitize_text_field($name),
+            'email'       => sanitize_email($email),
+            'ip_address'  => $_SERVER['REMOTE_ADDR'],
+            'user_agent'  => sanitize_text_field($_SERVER['HTTP_USER_AGENT'])
         ]);
         
-        // Update vote count
+        // Update vote count on choices table
         $wpdb->query($wpdb->prepare(
             "UPDATE $choices_table SET vote_count = vote_count + 1 WHERE id = %d",
             $choice_id
@@ -306,27 +301,20 @@ class WP_Survey_Database {
     public static function has_voted($survey_id, $email) {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_responses';
-        
         $count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM $table WHERE survey_id = %d AND email = %s",
-            $survey_id,
-            sanitize_email($email)
+            $survey_id, sanitize_email($email)
         ));
-        
         return $count > 0;
     }
     
     public static function has_voted_by_session($survey_id, $session_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_responses';
-        
-        $count = $wpdb->get_var($wpdb->prepare(
+        return $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(DISTINCT question_id) FROM $table WHERE survey_id = %d AND session_id = %s",
-            $survey_id,
-            sanitize_text_field($session_id)
+            $survey_id, sanitize_text_field($session_id)
         ));
-        
-        return $count;
     }
     
     // ============================================
@@ -335,7 +323,7 @@ class WP_Survey_Database {
     
     public static function get_survey_stats($survey_id) {
         global $wpdb;
-        $choices_table = $wpdb->prefix . 'survey_choices';
+        $choices_table   = $wpdb->prefix . 'survey_choices';
         $responses_table = $wpdb->prefix . 'survey_responses';
         
         $total_votes = $wpdb->get_var($wpdb->prepare(
@@ -344,7 +332,7 @@ class WP_Survey_Database {
         ));
         
         $unique_voters = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(DISTINCT COALESCE(session_id, email)) FROM $responses_table WHERE survey_id = %d",
+            "SELECT COUNT(DISTINCT COALESCE(session_id, ip_address)) FROM $responses_table WHERE survey_id = %d",
             $survey_id
         ));
         
@@ -354,16 +342,190 @@ class WP_Survey_Database {
         ));
         
         return [
-            'total_votes' => $total_votes,
+            'total_votes'   => $total_votes,
             'unique_voters' => $unique_voters,
-            'choices' => $choices
+            'choices'       => $choices
+        ];
+    }
+    
+    // ============================================
+    // ANALYTICS METHODS
+    // ============================================
+    
+    /**
+     * Get full analytics data for a survey
+     */
+    public static function get_analytics($survey_id) {
+        global $wpdb;
+        $responses_table = $wpdb->prefix . 'survey_responses';
+        $choices_table   = $wpdb->prefix . 'survey_choices';
+        $questions_table = $wpdb->prefix . 'survey_questions';
+        $survey          = self::get_survey($survey_id);
+        
+        if (!$survey) return null;
+        
+        // --- Overview stats ---
+        $total_votes = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d",
+            $survey_id
+        ));
+        
+        $unique_voters = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT COALESCE(session_id, ip_address)) FROM $responses_table WHERE survey_id = %d",
+            $survey_id
+        ));
+        
+        $first_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT MIN(created_at) FROM $responses_table WHERE survey_id = %d",
+            $survey_id
+        ));
+        
+        $last_vote = $wpdb->get_var($wpdb->prepare(
+            "SELECT MAX(created_at) FROM $responses_table WHERE survey_id = %d",
+            $survey_id
+        ));
+        
+        // Today's votes
+        $today_votes = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND DATE(created_at) = CURDATE()",
+            $survey_id
+        ));
+        
+        // --- Votes per day (last 30 days) ---
+        $votes_by_day_raw = $wpdb->get_results($wpdb->prepare(
+            "SELECT DATE(created_at) as vote_date, COUNT(*) as votes
+             FROM $responses_table
+             WHERE survey_id = %d AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+             GROUP BY DATE(created_at)
+             ORDER BY vote_date ASC",
+            $survey_id
+        ));
+        
+        // Fill in zeros for missing days
+        $votes_by_day = [];
+        $date_map = [];
+        foreach ($votes_by_day_raw as $row) {
+            $date_map[$row->vote_date] = (int) $row->votes;
+        }
+        for ($i = 29; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-{$i} days"));
+            $votes_by_day[] = [
+                'date'  => $date,
+                'label' => date('M j', strtotime($date)),
+                'votes' => isset($date_map[$date]) ? $date_map[$date] : 0
+            ];
+        }
+        
+        // --- Per-question / per-choice breakdown ---
+        $questions_analytics = [];
+        
+        if ($survey->survey_type === 'multi-question') {
+            $questions = self::get_questions($survey_id);
+            
+            foreach ($questions as $q) {
+                $choices = self::get_choices($survey_id, $q->id);
+                
+                $q_total = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND question_id = %d",
+                    $survey_id, $q->id
+                ));
+                
+                $choices_data = [];
+                foreach ($choices as $c) {
+                    $votes = (int) $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND question_id = %d AND choice_id = %d",
+                        $survey_id, $q->id, $c->id
+                    ));
+                    $pct = $q_total > 0 ? round(($votes / $q_total) * 100, 1) : 0;
+                    $choices_data[] = [
+                        'id'         => $c->id,
+                        'title'      => $c->title,
+                        'votes'      => $votes,
+                        'percentage' => $pct
+                    ];
+                }
+                
+                // Sort choices by votes desc
+                usort($choices_data, function($a, $b) { return $b['votes'] - $a['votes']; });
+                
+                $questions_analytics[] = [
+                    'id'           => $q->id,
+                    'question'     => $q->question_text,
+                    'total_votes'  => $q_total,
+                    'choices'      => $choices_data
+                ];
+            }
+        } else {
+            // Simple survey - single question
+            $choices = self::get_choices($survey_id);
+            $choices_data = [];
+            
+            foreach ($choices as $c) {
+                $votes = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND choice_id = %d",
+                    $survey_id, $c->id
+                ));
+                $pct = $total_votes > 0 ? round(($votes / $total_votes) * 100, 1) : 0;
+                $choices_data[] = [
+                    'id'         => $c->id,
+                    'title'      => $c->title,
+                    'votes'      => $votes,
+                    'percentage' => $pct
+                ];
+            }
+            
+            usort($choices_data, function($a, $b) { return $b['votes'] - $a['votes']; });
+            
+            $questions_analytics[] = [
+                'id'          => 0,
+                'question'    => $survey->question,
+                'total_votes' => $total_votes,
+                'choices'     => $choices_data
+            ];
+        }
+        
+        // --- Recent responses (last 20) ---
+        $recent_responses = $wpdb->get_results($wpdb->prepare(
+            "SELECT r.created_at, r.ip_address, c.title as choice_title,
+                    COALESCE(q.question_text, '') as question_text
+             FROM $responses_table r
+             LEFT JOIN $choices_table c ON c.id = r.choice_id
+             LEFT JOIN {$wpdb->prefix}survey_questions q ON q.id = r.question_id
+             WHERE r.survey_id = %d
+             ORDER BY r.created_at DESC
+             LIMIT 20",
+            $survey_id
+        ));
+        
+        // --- Hourly distribution (all-time) ---
+        $hourly_raw = $wpdb->get_results($wpdb->prepare(
+            "SELECT HOUR(created_at) as hour, COUNT(*) as votes
+             FROM $responses_table WHERE survey_id = %d
+             GROUP BY HOUR(created_at) ORDER BY hour ASC",
+            $survey_id
+        ));
+        $hourly = array_fill(0, 24, 0);
+        foreach ($hourly_raw as $row) {
+            $hourly[(int) $row->hour] = (int) $row->votes;
+        }
+        
+        return [
+            'survey'          => $survey,
+            'total_votes'     => $total_votes,
+            'unique_voters'   => $unique_voters,
+            'today_votes'     => $today_votes,
+            'first_vote'      => $first_vote,
+            'last_vote'       => $last_vote,
+            'votes_by_day'    => $votes_by_day,
+            'questions'       => $questions_analytics,
+            'recent'          => $recent_responses,
+            'hourly'          => $hourly,
         ];
     }
     
     public static function export_emails($survey_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_responses';
-        
         return $wpdb->get_results($wpdb->prepare(
             "SELECT DISTINCT name, email, created_at FROM $table WHERE survey_id = %d ORDER BY created_at DESC",
             $survey_id

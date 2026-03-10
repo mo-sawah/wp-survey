@@ -474,3 +474,18 @@
 .notice.notice-success {
   border-left-color: #10b981;
 }
+
+/* ============================================
+   VOTING MODE BOX
+   ============================================ */
+.wp-survey-voting-mode-box {
+    padding: 15px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    max-width: 520px;
+}
+
+.notice.inline {
+    display: block;
+}
