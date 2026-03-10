@@ -212,7 +212,7 @@
                 <h3><?php _e('Statistics', 'wp-survey'); ?></h3>
                 <div class="wp-survey-stat">
                     <div class="wp-survey-stat-number"><?php echo $stats['total_votes']; ?></div>
-                    <div class="wp-survey-stat-label"><?php _e('Total Votes', 'wp-survey'); ?></div>
+                    <div class="wp-survey-stat-label"><?php _e('Answeres', 'wp-survey'); ?></div>
                 </div>
                 <div class="wp-survey-stat">
                     <div class="wp-survey-stat-number"><?php echo $stats['unique_voters']; ?></div>

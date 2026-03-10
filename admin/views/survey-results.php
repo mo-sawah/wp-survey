@@ -77,7 +77,7 @@
     <div class="wps-results-summary">
         <div class="wps-results-summary-item">
             <span class="wps-results-summary-number"><?php echo number_format($results['total_votes']); ?></span>
-            <span class="wps-results-summary-label"><?php _e('Total Votes', 'wp-survey'); ?></span>
+            <span class="wps-results-summary-label"><?php _e('Answeres', 'wp-survey'); ?></span>
         </div>
         <div class="wps-results-summary-divider"></div>
         <div class="wps-results-summary-item">

@@ -78,7 +78,7 @@
             <div class="wp-survey-analytics-stat-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">🗳️</div>
             <div class="wp-survey-analytics-stat-body">
                 <div class="wp-survey-analytics-stat-number"><?php echo number_format($data['total_votes']); ?></div>
-                <div class="wp-survey-analytics-stat-label"><?php _e('Total Votes', 'wp-survey'); ?></div>
+                <div class="wp-survey-analytics-stat-label"><?php _e('Answeres', 'wp-survey'); ?></div>
             </div>
         </div>
         
