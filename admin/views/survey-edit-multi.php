@@ -217,8 +217,11 @@
                     <label><?php _e('Use this shortcode', 'wp-survey'); ?></label>
                     <code onclick="this.select()">[wp_survey id="<?php echo $survey->id; ?>"]</code>
                 </div>
-                <div style="margin-top: 12px;">
-                    <a href="<?php echo admin_url('admin.php?page=wp-survey-analytics&survey_id=' . $survey->id); ?>" class="button button-secondary" style="width:100%; text-align:center;">
+                <div style="margin-top: 12px; display:flex; flex-direction:column; gap:6px;">
+                    <a href="<?php echo admin_url('admin.php?page=wp-survey-results&survey_id=' . $survey->id); ?>" class="button button-secondary" style="text-align:center;">
+                        📋 <?php _e('View Results', 'wp-survey'); ?>
+                    </a>
+                    <a href="<?php echo admin_url('admin.php?page=wp-survey-analytics&survey_id=' . $survey->id); ?>" class="button button-secondary" style="text-align:center;">
                         📊 <?php _e('View Analytics', 'wp-survey'); ?>
                     </a>
                 </div>

@@ -3,7 +3,7 @@
  * Plugin Name: WP Survey
  * Plugin URI: https://sawahsolutions.com
  * Description: Modern survey plugin with image support and Facebook integration
- * Version: 1.3.0
+ * Version: 1.3.1
  * Author: Mohamed Sawah
  * Author URI: https://sawahsolutions.com
  * Text Domain: wp-survey
@@ -15,7 +15,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-define('WP_SURVEY_VERSION', '1.3.0');
+define('WP_SURVEY_VERSION', '1.3.1');
 define('WP_SURVEY_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WP_SURVEY_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WP_SURVEY_PLUGIN_FILE', __FILE__);
@@ -29,11 +29,19 @@ register_activation_hook(__FILE__, ['WP_Survey_Activator', 'activate']);
 
 function wp_survey_init() {
     load_plugin_textdomain('wp-survey', false, dirname(plugin_basename(__FILE__)) . '/languages');
-    
+
+    // Always run column migrations so new columns are added
+    // even without deactivate/reactivate. Lightweight — uses SHOW COLUMNS cache.
+    $db_version = get_option('wp_survey_db_version', '0');
+    if (version_compare($db_version, WP_SURVEY_VERSION, '<')) {
+        WP_Survey_Activator::run_migrations();
+        update_option('wp_survey_db_version', WP_SURVEY_VERSION);
+    }
+
     if (is_admin()) {
         new WP_Survey_Admin();
     }
-    
+
     new WP_Survey_Public();
 }
 add_action('plugins_loaded', 'wp_survey_init');

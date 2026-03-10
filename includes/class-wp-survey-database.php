@@ -523,6 +523,94 @@ class WP_Survey_Database {
         ];
     }
     
+    /**
+     * Get clean results data for the Results page.
+     * Focused on choice breakdowns — simpler than full analytics.
+     */
+    public static function get_results($survey_id) {
+        global $wpdb;
+        $responses_table = $wpdb->prefix . 'survey_responses';
+        $choices_table   = $wpdb->prefix . 'survey_choices';
+
+        $survey = self::get_survey($survey_id);
+        if (!$survey) return null;
+
+        $total_votes = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d", $survey_id
+        ));
+
+        $unique_voters = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(DISTINCT COALESCE(session_id, ip_address)) FROM $responses_table WHERE survey_id = %d", $survey_id
+        ));
+
+        $questions_results = [];
+
+        if ($survey->survey_type === 'multi-question') {
+            $questions = self::get_questions($survey_id);
+            foreach ($questions as $q) {
+                $choices = self::get_choices($survey_id, $q->id);
+                $q_total = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND question_id = %d",
+                    $survey_id, $q->id
+                ));
+
+                $choices_data = [];
+                foreach ($choices as $c) {
+                    $votes = (int) $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND question_id = %d AND choice_id = %d",
+                        $survey_id, $q->id, $c->id
+                    ));
+                    $choices_data[] = [
+                        'id'         => $c->id,
+                        'title'      => $c->title,
+                        'image_url'  => $c->image_url,
+                        'votes'      => $votes,
+                        'percentage' => $q_total > 0 ? round(($votes / $q_total) * 100, 1) : 0,
+                    ];
+                }
+                usort($choices_data, fn($a, $b) => $b['votes'] - $a['votes']);
+
+                $questions_results[] = [
+                    'id'          => $q->id,
+                    'question'    => $q->question_text,
+                    'total_votes' => $q_total,
+                    'choices'     => $choices_data,
+                ];
+            }
+        } else {
+            $choices      = self::get_choices($survey_id);
+            $choices_data = [];
+            foreach ($choices as $c) {
+                $votes = (int) $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM $responses_table WHERE survey_id = %d AND choice_id = %d",
+                    $survey_id, $c->id
+                ));
+                $choices_data[] = [
+                    'id'         => $c->id,
+                    'title'      => $c->title,
+                    'image_url'  => $c->image_url,
+                    'votes'      => $votes,
+                    'percentage' => $total_votes > 0 ? round(($votes / $total_votes) * 100, 1) : 0,
+                ];
+            }
+            usort($choices_data, fn($a, $b) => $b['votes'] - $a['votes']);
+
+            $questions_results[] = [
+                'id'          => 0,
+                'question'    => $survey->question,
+                'total_votes' => $total_votes,
+                'choices'     => $choices_data,
+            ];
+        }
+
+        return [
+            'survey'        => $survey,
+            'total_votes'   => $total_votes,
+            'unique_voters' => $unique_voters,
+            'questions'     => $questions_results,
+        ];
+    }
+
     public static function export_emails($survey_id) {
         global $wpdb;
         $table = $wpdb->prefix . 'survey_responses';
