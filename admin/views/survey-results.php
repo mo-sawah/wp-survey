@@ -669,7 +669,10 @@ document.addEventListener('DOMContentLoaded', function() {
             reportWrap.querySelectorAll('.wps-report-section').forEach(function(sec) {
                 // Section title
                 var title = sec.querySelector('.wps-report-section-title');
-                if (title) targets.push({ el: title, type: 'report-chunk' });
+                // Check if this is the Q-by-Q section (contains "02" num badge)
+                var sectionNum = title ? title.querySelector('.wps-report-section-num') : null;
+                var isQbyQ = sectionNum && sectionNum.textContent.trim() === '02';
+                if (title) targets.push({ el: title, type: 'report-chunk', newPageBefore: isQbyQ });
 
                 // Every direct meaningful child in the body
                 var body = sec.querySelector('.wps-report-section-body');
@@ -728,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return arr;
                     }
                     return cap(t.el, t.type === 'cover' ? null : '#ffffff').then(function(r) {
-                        arr.push({ img: r.img, mmH: r.mmH, type: t.type });
+                        arr.push({ img: r.img, mmH: r.mmH, type: t.type, newPageBefore: t.newPageBefore || false });
                         return arr;
                     });
                 });
@@ -771,7 +774,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // ── REPORT CHUNKS — flow with 2mm gaps ────────
                     if (item.type === 'report-chunk') {
-                        y = place(pdf, item, y, 2);
+                        if (item.newPageBefore) { pdf.addPage(); y = M; }
+                        y = place(pdf, item, y, item.newPageBefore ? 0 : 2);
                         return;
                     }
 
@@ -931,7 +935,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .wps-report-section-title {
     display:flex; align-items:center; gap:12px;
-    font-size:17px; font-weight:700; color:#1e1b4b;
+    font-size:19px; font-weight:700; color:#1e1b4b;
     margin-bottom:16px; padding-bottom:12px;
     border-bottom:2px solid #ede9fe;
 }
@@ -941,26 +945,25 @@ document.addEventListener('DOMContentLoaded', function() {
     padding:3px 8px; border-radius:20px;
     letter-spacing:0.5px;
 }
-.wps-report-section-body p { font-size:14px; line-height:1.7; color:#374151; margin:0 0 12px; }
-.wps-report-section-body h4 { font-size:14px; font-weight:700; color:#1e1b4b; margin:16px 0 8px; }
-.wps-report-note { background:#f0f4ff; border-left:3px solid #6366f1; padding:10px 14px; border-radius:0 8px 8px 0; color:#3730a3 !important; font-style:italic; }
+.wps-report-section-body p { font-size:16px; line-height:1.75; color:#374151; margin:0 0 12px; }
+.wps-report-section-body h4 { font-size:16px; font-weight:700; color:#1e1b4b; margin:16px 0 8px; }
+.wps-report-note { background:#f0f4ff; border-left:3px solid #6366f1; padding:12px 16px; border-radius:0 8px 8px 0; color:#3730a3 !important; font-style:italic; font-size:15px; }
 
-/* Key findings */
 .wps-report-findings-title { font-size:13px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.5px; margin:16px 0 10px; }
 .wps-report-findings { display:flex; flex-direction:column; gap:8px; }
-.wps-report-finding { display:flex; gap:12px; align-items:flex-start; background:#f8f7ff; border:1px solid #ede9fe; border-radius:8px; padding:10px 14px; font-size:13px; color:#374151; line-height:1.5; }
+.wps-report-finding { display:flex; gap:12px; align-items:flex-start; background:#f8f7ff; border:1px solid #ede9fe; border-radius:8px; padding:12px 16px; font-size:15px; color:#374151; line-height:1.6; }
 .wps-report-finding-num { background:linear-gradient(135deg,#6366f1,#4338ca); color:#fff; font-size:11px; font-weight:800; min-width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .wps-report-finding-green { background:#f0fdf4; border-color:#a7f3d0; }
-.wps-report-correlation-item { background:#f0f4ff; border:1px solid #c7d2fe; border-radius:8px; padding:8px 14px; font-size:13px; color:#3730a3; }
+.wps-report-correlation-item { background:#f0f4ff; border:1px solid #c7d2fe; border-radius:8px; padding:10px 16px; font-size:15px; color:#3730a3; }
 
 /* Question analysis blocks */
 .wps-report-q-block { margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid #f3f4f6; }
 .wps-report-q-block:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
 .wps-report-q-header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
-.wps-report-q-num { background:linear-gradient(135deg,#6366f1,#4338ca); color:#fff; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
-.wps-report-q-title { font-size:14px; font-weight:700; color:#1e1b4b; flex:1; }
-.wps-report-q-leader { background:#fef3c7; color:#92400e; font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap; }
-.wps-report-notable { background:#fef9ec; border:1px solid #fde68a; border-radius:8px; padding:10px 14px; font-size:13px; color:#92400e; margin-top:10px; line-height:1.5; }
+.wps-report-q-num { background:linear-gradient(135deg,#6366f1,#4338ca); color:#fff; font-size:12px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+.wps-report-q-title { font-size:16px; font-weight:700; color:#1e1b4b; flex:1; }
+.wps-report-q-leader { background:#fef3c7; color:#92400e; font-size:13px; font-weight:600; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+.wps-report-notable { background:#fef9ec; border:1px solid #fde68a; border-radius:8px; padding:12px 16px; font-size:15px; color:#92400e; margin-top:10px; line-height:1.6; }
 
 /* Conclusions section accent */
 .wps-report-conclusions { border-left:4px solid #059669 !important; }
