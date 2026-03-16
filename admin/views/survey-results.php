@@ -104,8 +104,8 @@ $site_url   = get_site_url();
     <!-- ══════════════════════════════════════════════════════════════
          PDF-ONLY COVER PAGE  (hidden on screen, shown during export)
     ═══════════════════════════════════════════════════════════════ -->
-    <div id="wps-pdf-cover" style="display:none;">
-        <div style="width:1060px; height:1500px; background:linear-gradient(160deg,#0f172a 0%,#1e1b4b 45%,#312e81 100%); padding:64px 72px; color:#fff; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box; flex-shrink:0;">
+    <div id="wps-pdf-cover" style="display:none; overflow:hidden; width:1060px; box-sizing:border-box;">
+        <div style="width:1060px; height:1500px; background:linear-gradient(160deg,#0f172a 0%,#1e1b4b 45%,#312e81 100%); padding:64px 72px; color:#fff; display:flex; flex-direction:column; justify-content:space-between; box-sizing:border-box; overflow:hidden;">
 
             <!-- Top: logo + site -->
             <div style="display:flex; align-items:center; gap:16px; padding-bottom:32px; border-bottom:1px solid rgba(255,255,255,0.15);">
@@ -568,6 +568,36 @@ document.addEventListener('DOMContentLoaded', function() {
     var UW = PW - M * 2;     // 186mm usable width
     var SCALE = 2, CAP_W = 1060;
 
+    // Before capturing report chunks, fix their widths to CAP_W
+    function lockWidths(wrap) {
+        if (!wrap) return;
+        // Force the report container to a known width so all children render consistently
+        wrap.style.width = CAP_W + 'px';
+        wrap.style.maxWidth = CAP_W + 'px';
+        wrap.querySelectorAll('.wps-report-section').forEach(function(s) {
+            s.style.width = CAP_W + 'px';
+            s.style.boxSizing = 'border-box';
+        });
+        wrap.querySelectorAll('.wps-report-section-title').forEach(function(t) {
+            t.style.boxSizing = 'border-box';
+            t.style.width = '100%';
+        });
+        wrap.querySelectorAll('.wps-report-q-block').forEach(function(q) {
+            q.style.boxSizing = 'border-box';
+            q.style.width = '100%';
+        });
+    }
+
+    function unlockWidths(wrap) {
+        if (!wrap) return;
+        wrap.style.width = '';
+        wrap.style.maxWidth = '';
+        wrap.querySelectorAll('.wps-report-section, .wps-report-section-title, .wps-report-q-block').forEach(function(el) {
+            el.style.width = '';
+            el.style.boxSizing = '';
+        });
+    }
+
     // Shared html2canvas options
     function makeH2cOpts(bg) {
         return {
@@ -591,7 +621,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Capture element → {img, mmH}
     function cap(el, bg) {
         return html2canvas(el, makeH2cOpts(bg)).then(function(c) {
-            return { img: c.toDataURL('image/png'), mmH: (c.height / c.width) * UW };
+            // Scale mmH to the usable page width
+            var rawW = el.getBoundingClientRect().width;
+            var mmH = (c.height / c.width) * UW;
+            return { img: c.toDataURL('image/png'), mmH: mmH };
         });
     }
 
@@ -616,8 +649,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cover)  cover.style.display  = 'block';
         if (footer) footer.style.display = 'block';
 
+        var reportWrap = document.getElementById('wps-ai-report-wrap');
+        // Lock widths so all report elements render at consistent CAP_W
+        lockWidths(reportWrap);
+
         // ── Collect all capture targets in order ──────────────────
-        // Each entry: { el, type }
         // type: 'cover' | 'report-bar' | 'report-chunk' | 'summary' | 'card' | 'footer'
 
         var targets = [];
@@ -626,7 +662,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cover) targets.push({ el: cover, type: 'cover' });
 
         // 2. Report chunks (topbar + each atomic sub-element inside sections)
-        var reportWrap = document.getElementById('wps-ai-report-wrap');
         if (reportWrap && reportWrap.offsetHeight > 0) {
             var topbar = reportWrap.querySelector('.wps-report-topbar');
             if (topbar) targets.push({ el: topbar, type: 'report-bar' });
@@ -639,11 +674,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Every direct meaningful child in the body
                 var body = sec.querySelector('.wps-report-section-body');
                 if (body) {
-                    // Walk children — each is its own capture
                     Array.from(body.children).forEach(function(child) {
-                        // For question blocks, capture sub-elements individually
                         if (child.classList.contains('wps-report-q-block')) {
-                            // Header row
+                            // Question header row
                             var qHead = child.querySelector('.wps-report-q-header');
                             if (qHead) targets.push({ el: qHead, type: 'report-chunk' });
                             // Each paragraph
@@ -653,16 +686,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Notable callout
                             var notable = child.querySelector('.wps-report-notable');
                             if (notable) targets.push({ el: notable, type: 'report-chunk' });
-                            // Separator line — skip (too thin to capture)
+                            // Spacer between questions
+                            targets.push({ el: null, type: 'spacer', mm: 6 });
                         } else if (child.classList.contains('wps-report-findings')) {
-                            // Each finding row separately
                             Array.from(child.children).forEach(function(row) {
                                 targets.push({ el: row, type: 'report-chunk' });
                             });
                         } else if (child.tagName === 'P' || child.tagName === 'H4') {
                             targets.push({ el: child, type: 'report-chunk' });
                         } else {
-                            // Catch-all (callout boxes, correlation items, etc.)
                             targets.push({ el: child, type: 'report-chunk' });
                         }
                     });
@@ -688,6 +720,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var chain = Promise.resolve([]);
             targets.forEach(function(t) {
                 chain = chain.then(function(arr) {
+                    // Spacer: just a null with mm value
+                    if (t.type === 'spacer') { arr.push({ type: 'spacer', mm: t.mm }); return arr; }
                     // Skip invisible/zero-height elements
                     if (!t.el || t.el.offsetHeight < 2) {
                         arr.push(null);
@@ -707,7 +741,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 var onCoverPage = false;
 
                 items.forEach(function(item) {
-                    if (!item) return; // skipped element
+                    if (!item) return;
+
+                    // ── SPACER ─────────────────────────────────────
+                    if (item.type === 'spacer') {
+                        y += item.mm;
+                        return;
+                    }
 
                     // ── COVER — full bleed, own page ──────────────
                     if (item.type === 'cover') {
@@ -765,6 +805,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('PDF error:', e);
                 alert('PDF export failed: ' + e.message);
             }).finally(function() {
+                unlockWidths(reportWrap);
                 if (cover)  cover.style.display = 'none';
                 if (footer) footer.style.display = 'none';
                 pdfBtn.disabled = false;
@@ -841,8 +882,7 @@ document.addEventListener('DOMContentLoaded', function() {
 @keyframes wps-spin { to { transform:rotate(360deg); } }
 
 /* ── PDF chunk rendering helpers ─────────────────────────────── */
-/* Ensure every element html2canvas captures has a solid bg      */
-#wps-ai-report-wrap .wps-report-section-title,
+/* Ensure every captured element has a solid white background    */
 #wps-ai-report-wrap .wps-report-section-body > *,
 #wps-ai-report-wrap .wps-report-q-header,
 #wps-ai-report-wrap .wps-report-q-block > p,
@@ -853,11 +893,18 @@ document.addEventListener('DOMContentLoaded', function() {
 #wps-ai-report-wrap h4 {
     background-color: #ffffff;
 }
-/* Section title needs the full indigo gradient when captured */
+/* Section title: light bg for capture, preserve existing padding — do NOT add new padding */
 #wps-ai-report-wrap .wps-report-section-title {
     background-color: #fafafa;
-    padding: 12px 28px;
-    margin: 0;
+}
+
+/* ── Question block spacing ──────────────────────────────────── */
+.wps-report-q-block {
+    margin-bottom: 32px !important;
+    padding-bottom: 32px !important;
+}
+.wps-report-q-block > p {
+    margin-bottom: 10px !important;
 }
 
 /* ── Research Analysis Report Container ──────────────────────── */
