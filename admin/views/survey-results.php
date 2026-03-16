@@ -348,61 +348,84 @@ document.addEventListener('DOMContentLoaded', function() {
         requestAnimationFrame(function(){ setTimeout(function(){ b.style.width=w; }, 100); });
     });
 
-    // ── Report JS data ───────────────────────────────────────────────
-    var REPORT_DATA   = <?php echo $js_report; ?>;
-    var SURVEY_ID     = <?php echo $js_survey_id; ?>;
-    var SURVEY_TITLE  = <?php echo $js_title; ?>;
-    var REPORT_NONCE  = '<?php echo esc_js(wp_create_nonce('wps_report_nonce')); ?>';
+    // ── Report JS data ────────────────────────────────────────────────
+    var REPORT_DATA  = <?php echo $js_report; ?>;
+    var SURVEY_ID    = <?php echo $js_survey_id; ?>;
+    var SURVEY_TITLE = <?php echo $js_title; ?>;
+    var REPORT_NONCE = '<?php echo esc_js(wp_create_nonce('wps_report_nonce')); ?>';
 
-    // ── Generate Report button ───────────────────────────────────────
-    function startGenerate() {
-        var btn    = document.getElementById('wps-generate-report-btn') || document.getElementById('wps-regen-report-btn');
-        var box    = document.getElementById('wps-report-status-box');
-        var msgEl  = document.getElementById('wps-report-status-msg');
+    // ── Generate Report — 4 chained AJAX calls ───────────────────────
+    var SECTIONS = [
+        { key: 'overview',     label: '<?php echo esc_js(__('Writing executive overview…','wp-survey')); ?>',       step: '1/4' },
+        { key: 'questions',    label: '<?php echo esc_js(__('Analysing all questions…','wp-survey')); ?>',          step: '2/4' },
+        { key: 'cross',        label: '<?php echo esc_js(__('Finding cross-question patterns…','wp-survey')); ?>', step: '3/4' },
+        { key: 'conclusions',  label: '<?php echo esc_js(__('Writing conclusions…','wp-survey')); ?>',              step: '4/4' },
+    ];
 
-        if (box) box.style.display = 'block';
-        if (btn) btn.disabled = true;
+    function setStatus(msg, step) {
+        var el = document.getElementById('wps-report-status-msg');
+        if (el) el.innerHTML = step
+            ? '<strong style="color:#312e81">Step ' + step + '</strong> — ' + msg
+            : msg;
+    }
 
-        var steps = [
-            '<?php echo esc_js(__('Analyzing survey structure…','wp-survey')); ?>',
-            '<?php echo esc_js(__('Generating executive overview (call 1/4)…','wp-survey')); ?>',
-            '<?php echo esc_js(__('Analyzing each question in depth (call 2/4)…','wp-survey')); ?>',
-            '<?php echo esc_js(__('Running cross-question analysis (call 3/4)…','wp-survey')); ?>',
-            '<?php echo esc_js(__('Writing conclusions (call 4/4)…','wp-survey')); ?>',
-            '<?php echo esc_js(__('Finalizing report…','wp-survey')); ?>',
-        ];
-        var si = 0;
-        var stepTimer = setInterval(function(){
-            si = Math.min(si+1, steps.length-1);
-            if (msgEl) msgEl.textContent = steps[si];
-        }, 15000);
+    function runSection(surveyId, sectionIndex) {
+        var sec = SECTIONS[sectionIndex];
+        setStatus(sec.label, sec.step);
 
         jQuery.ajax({
             url:     wpSurvey.ajaxurl,
             method:  'POST',
-            timeout: 180000, // 3 min
-            data: { action:'wps_generate_report', nonce: REPORT_NONCE, survey_id: SURVEY_ID },
+            timeout: 120000,   // 2 min per section — plenty for one AI call
+            data: {
+                action:    'wps_generate_report',
+                nonce:     REPORT_NONCE,
+                survey_id: surveyId,
+                section:   sec.key,
+            },
             success: function(res) {
-                clearInterval(stepTimer);
-                if (res.success && res.data.report) {
-                    REPORT_DATA = res.data.report;
-                    renderReport(REPORT_DATA);
-                    if (box) box.style.display = 'none';
-                    location.reload(); // reload to refresh all buttons cleanly
+                if (!res.success) {
+                    onGenerateError(res.data && res.data.message ? res.data.message : '<?php echo esc_js(__('Unknown error','wp-survey')); ?>', sec.key);
+                    return;
+                }
+
+                if (res.data.done) {
+                    // All 4 sections complete
+                    setStatus('<?php echo esc_js(__('Report complete! Reloading…','wp-survey')); ?>', null);
+                    setTimeout(function(){ location.reload(); }, 800);
                 } else {
-                    clearInterval(stepTimer);
-                    if (box) box.style.display = 'none';
-                    alert('❌ ' + (res.data && res.data.message ? res.data.message : '<?php echo esc_js(__('Report generation failed.','wp-survey')); ?>'));
-                    if (btn) btn.disabled = false;
+                    // Move to next section
+                    runSection(surveyId, sectionIndex + 1);
                 }
             },
-            error: function(xhr) {
-                clearInterval(stepTimer);
-                if (box) box.style.display = 'none';
-                alert('❌ <?php echo esc_js(__('Request timed out or failed. Check your server timeout settings.','wp-survey')); ?>');
-                if (btn) btn.disabled = false;
+            error: function(xhr, status) {
+                var msg = status === 'timeout'
+                    ? '<?php echo esc_js(__('Section timed out. Your server may be slow — try again.','wp-survey')); ?>'
+                    : '<?php echo esc_js(__('Network error on section','wp-survey')); ?> ' + sec.key;
+                onGenerateError(msg, sec.key);
             }
         });
+    }
+
+    function startGenerate() {
+        var box  = document.getElementById('wps-report-status-box');
+        var genB = document.getElementById('wps-generate-report-btn');
+        var regB = document.getElementById('wps-regen-report-btn');
+        if (box)  box.style.display = 'block';
+        if (genB) genB.disabled = true;
+        if (regB) regB.disabled = true;
+        setStatus('<?php echo esc_js(__('Starting…','wp-survey')); ?>', null);
+        runSection(SURVEY_ID, 0);
+    }
+
+    function onGenerateError(msg, section) {
+        var box  = document.getElementById('wps-report-status-box');
+        var genB = document.getElementById('wps-generate-report-btn');
+        var regB = document.getElementById('wps-regen-report-btn');
+        if (box)  box.style.display = 'none';
+        if (genB) genB.disabled = false;
+        if (regB) regB.disabled = false;
+        alert('❌ Error on section "' + section + '": ' + msg);
     }
 
     var genBtn   = document.getElementById('wps-generate-report-btn');

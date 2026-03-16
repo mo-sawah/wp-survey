@@ -225,26 +225,37 @@ class WP_Survey_Admin {
 
     // ── AI Report AJAX ────────────────────────────────────────────────────────
 
+    /**
+     * Runs ONE section per call — no timeouts.
+     * JS chains 4 calls: overview → questions → cross → conclusions
+     */
     public function ajax_generate_report() {
         check_ajax_referer('wps_report_nonce', 'nonce');
         if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Unauthorized']);
 
         $survey_id = intval($_POST['survey_id']);
+        $section   = sanitize_key($_POST['section'] ?? 'overview');
+
         if (!$survey_id) wp_send_json_error(['message' => 'No survey selected.']);
 
-        @set_time_limit(300);
+        @set_time_limit(120);
         @ignore_user_abort(true);
 
-        if (!class_exists('WP_Survey_AI_Report')) {
-            require_once WP_SURVEY_PLUGIN_DIR . 'includes/class-wp-survey-ai-report.php';
+        // On first section, wipe any previous report so we start fresh
+        if ($section === 'overview') {
+            WP_Survey_AI_Report::delete_report($survey_id);
         }
 
-        $result = (new WP_Survey_AI_Report())->generate($survey_id);
+        $result = WP_Survey_AI_Report::run_section($survey_id, $section);
 
         if ($result['success']) {
-            wp_send_json_success(['message' => 'Report generated.', 'report' => $result['report']]);
+            wp_send_json_success([
+                'done'    => $result['done']   ?? false,
+                'report'  => $result['report'] ?? null,
+                'section' => $section,
+            ]);
         } else {
-            wp_send_json_error(['message' => $result['error']]);
+            wp_send_json_error(['message' => $result['error'], 'section' => $section]);
         }
     }
 
