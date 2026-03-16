@@ -291,121 +291,130 @@ document.addEventListener('DOMContentLoaded', function() {
     var btn = document.getElementById('wps-export-pdf-btn');
     if (!btn) return;
 
-    btn.addEventListener('click', function() {
-        var content = document.getElementById('wps-pdf-content');
-        if (!content) return;
+    var MARGIN   = 10;   // mm
+    var PAGE_W   = 210;  // A4
+    var PAGE_H   = 297;
+    var USABLE_W = PAGE_W - MARGIN * 2;
+    var USABLE_H = PAGE_H - MARGIN * 2;
+    var SCALE    = 2;
+    var CAPTURE_W = 1060;
 
-        // UI feedback
+    var h2cOptions = {
+        scale:           SCALE,
+        useCORS:         true,
+        allowTaint:      true,
+        backgroundColor: '#ffffff',
+        logging:         false,
+        windowWidth:     CAPTURE_W,
+        onclone: function(clonedDoc) {
+            // Force all bar fills to final width — skip animation
+            clonedDoc.querySelectorAll('.wps-results-bar-fill').forEach(function(bar) {
+                bar.style.transition = 'none';
+                bar.style.width = bar.dataset.pct + '%';
+            });
+        }
+    };
+
+    // Capture a single DOM element → returns Promise<{imgData, mmH}>
+    function captureElement(el) {
+        return html2canvas(el, h2cOptions).then(function(canvas) {
+            var mmH = (canvas.height / canvas.width) * USABLE_W;
+            return { imgData: canvas.toDataURL('image/png'), mmH: mmH };
+        });
+    }
+
+    btn.addEventListener('click', function() {
         btn.disabled = true;
         btn.innerHTML = '<span style="display:inline-block;animation:wps-spin 0.8s linear infinite;margin-right:4px;">⏳</span> Generating…';
 
-        // Show PDF-only elements, hide screen-only ones
+        // Show PDF-only cover/footer
         var cover  = document.getElementById('wps-pdf-cover');
         var footer = document.getElementById('wps-pdf-footer');
-        if (cover)  cover.style.display  = 'block';
+        if (cover)  cover.style.display = 'block';
         if (footer) footer.style.display = 'block';
 
-        // Wait a frame so the cover renders before capture
-        requestAnimationFrame(function() {
-            setTimeout(function() {
+        // Collect sections to capture in order:
+        // 1. cover  2. summary bar  3. each question card  4. footer
+        var sections = [];
+        if (cover)  sections.push(cover);
 
-                html2canvas(content, {
-                    scale:           2,          // 2× for crisp text
-                    useCORS:         true,
-                    allowTaint:      true,
-                    backgroundColor: '#f9fafb',  // matches WP admin background
-                    logging:         false,
-                    windowWidth:     1100,        // fixed capture width
-                    onclone: function(clonedDoc) {
-                        // Inside the clone: ensure all bar fills are at their
-                        // final width (animation may not have finished)
-                        clonedDoc.querySelectorAll('.wps-results-bar-fill').forEach(function(bar) {
-                            bar.style.transition = 'none';
-                            bar.style.width      = bar.dataset.pct + '%';
-                        });
-                        // Expand the content width for consistent layout
-                        var wrap = clonedDoc.getElementById('wps-pdf-content');
-                        if (wrap) { wrap.style.width = '1060px'; wrap.style.maxWidth = '1060px'; }
-                    }
-                }).then(function(canvas) {
+        var summary = document.querySelector('.wps-results-notice, .wps-results-summary');
+        // Capture notice + summary together if both exist
+        var noticeEl  = document.querySelector('.wps-results-notice');
+        var summaryEl = document.querySelector('.wps-results-summary');
+        if (noticeEl)  sections.push(noticeEl);
+        if (summaryEl) sections.push(summaryEl);
 
-                    var imgData   = canvas.toDataURL('image/png');
-                    var { jsPDF } = window.jspdf;
+        document.querySelectorAll('.wps-results-question-card').forEach(function(card) {
+            sections.push(card);
+        });
 
-                    // A4 page: 210mm × 297mm
-                    var pageW  = 210;
-                    var pageH  = 297;
-                    var margin = 10;  // mm
-                    var usableW = pageW - margin * 2;
+        if (footer) sections.push(footer);
 
-                    // Scale image to fit usable width
-                    var imgW   = usableW;
-                    var imgH   = (canvas.height / canvas.width) * imgW;
+        // Wait a frame so cover/footer render before capture starts
+        requestAnimationFrame(function() { setTimeout(function() {
 
-                    var pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                    var posY   = margin;
+            // Capture all sections sequentially
+            var chain = Promise.resolve([]);
+            sections.forEach(function(el) {
+                chain = chain.then(function(results) {
+                    return captureElement(el).then(function(r) {
+                        results.push(r);
+                        return results;
+                    });
+                });
+            });
 
-                    // Slice image into pages
-                    var totalH    = imgH;
-                    var pageContent = pageH - margin * 2;
-                    var srcY      = 0;    // current Y in mm of the source image
-                    var pageNum   = 0;
+            chain.then(function(captured) {
 
-                    while (srcY < totalH) {
-                        if (pageNum > 0) pdf.addPage();
+                var { jsPDF } = window.jspdf;
+                var pdf  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                var curY = MARGIN;
 
-                        var sliceH = Math.min(pageContent, totalH - srcY);
+                captured.forEach(function(item, i) {
+                    var imgH = item.mmH;
+                    var GAP  = (i === 0) ? 0 : 5; // gap between sections
 
-                        // Calculate pixel crop from the original canvas
-                        var pxPerMm   = canvas.width / imgW;
-                        var srcYpx    = srcY   * pxPerMm;
-                        var sliceHpx  = sliceH * pxPerMm;
-
-                        // Crop canvas slice
-                        var slice  = document.createElement('canvas');
-                        slice.width  = canvas.width;
-                        slice.height = Math.ceil(sliceHpx);
-                        slice.getContext('2d').drawImage(
-                            canvas,
-                            0, srcYpx, canvas.width, sliceHpx,
-                            0, 0,      canvas.width, sliceHpx
-                        );
-
-                        pdf.addImage(
-                            slice.toDataURL('image/png'),
-                            'PNG',
-                            margin, margin,
-                            imgW, sliceH
-                        );
-
-                        srcY   += sliceH;
-                        pageNum++;
+                    // If this section is taller than a full page, scale it to fit one page
+                    if (imgH > USABLE_H) {
+                        // Add a new page (unless first item) and scale to fill
+                        if (i > 0) { pdf.addPage(); curY = MARGIN; }
+                        pdf.addImage(item.imgData, 'PNG', MARGIN, curY, USABLE_W, USABLE_H);
+                        curY = MARGIN + USABLE_H; // force new page next
+                        return;
                     }
 
-                    // Build filename from survey title + date
-                    var title    = <?php echo wp_json_encode($results ? $results['survey']->title : 'results'); ?>;
-                    var dateStr  = new Date().toISOString().slice(0,10);
-                    var filename = (title + '-results-' + dateStr)
-                                    .toLowerCase()
-                                    .replace(/[^a-z0-9]+/g, '-')
-                                    .replace(/^-+|-+$/g, '')
-                                    + '.pdf';
+                    // Start a new page if this section won't fit in remaining space
+                    if (curY + GAP + imgH > PAGE_H - MARGIN) {
+                        pdf.addPage();
+                        curY = MARGIN;
+                        GAP  = 0;
+                    }
 
-                    pdf.save(filename);
-
-                }).catch(function(err) {
-                    console.error('PDF export error:', err);
-                    alert('PDF export failed. See console for details.');
-                }).finally(function() {
-                    // Restore UI
-                    if (cover)  cover.style.display  = 'none';
-                    if (footer) footer.style.display = 'none';
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>⬇️</span> Export PDF';
+                    pdf.addImage(item.imgData, 'PNG', MARGIN, curY + GAP, USABLE_W, imgH);
+                    curY += GAP + imgH;
                 });
 
-            }, 150); // small delay so cover renders
-        });
+                // Save
+                var title    = <?php echo wp_json_encode($results ? $results['survey']->title : 'results'); ?>;
+                var dateStr  = new Date().toISOString().slice(0, 10);
+                var filename = (title + '-results-' + dateStr)
+                                .toLowerCase()
+                                .replace(/[^a-z0-9]+/g, '-')
+                                .replace(/^-+|-+$/g, '') + '.pdf';
+                pdf.save(filename);
+
+            }).catch(function(err) {
+                console.error('PDF export error:', err);
+                alert('PDF export failed. See console for details.');
+            }).finally(function() {
+                if (cover)  cover.style.display  = 'none';
+                if (footer) footer.style.display = 'none';
+                btn.disabled = false;
+                btn.innerHTML = '<span>⬇️</span> Export PDF';
+            });
+
+        }, 150); });
     });
 })();
 </script>
