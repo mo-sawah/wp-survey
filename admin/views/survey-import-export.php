@@ -36,8 +36,8 @@ if (isset($_GET['import_error'])): ?>
     <div style="grid-column:1/-1;">
     <div class="wps-ie-card" style="border-top:4px solid #6366f1;">
         <div class="wps-ie-card-header" style="background:linear-gradient(135deg,#1e1b4b,#312e81); color:#fff;">
-            <h2 style="color:#fff; margin:0;">🤖 <?php _e('AI Report Settings', 'wp-survey'); ?></h2>
-            <p style="color:#a5b4fc; margin:4px 0 0; font-size:13px;"><?php _e('Configure OpenRouter AI for the "Generate Report" feature on the Results page.', 'wp-survey'); ?></p>
+            <h2 style="color:#fff; margin:0;">📋 <?php _e('Analysis Report Settings', 'wp-survey'); ?></h2>
+            <p style="color:#a5b4fc; margin:4px 0 0; font-size:13px;"><?php _e('Configure the research analysis engine for the "Generate Analysis" feature on the Results page.', 'wp-survey'); ?></p>
         </div>
         <div class="wps-ie-card-body">
             <form method="post" action="">
@@ -120,8 +120,8 @@ if (isset($_GET['import_error'])): ?>
                 </div>
 
                 <div style="margin-top:20px; padding-top:16px; border-top:1px solid #e5e7eb; display:flex; align-items:center; gap:12px;">
-                    <?php submit_button(__('Save AI Settings', 'wp-survey'), 'primary', 'wps_save_ai_settings', false, ['style' => 'margin:0;']); ?>
-                    <span style="font-size:12px; color:#9ca3af;"><?php _e('After saving, go to WP Survey → Results → Generate Report', 'wp-survey'); ?></span>
+                    <?php submit_button(__('Save Settings', 'wp-survey'), 'primary', 'wps_save_ai_settings', false, ['style' => 'margin:0;']); ?>
+                    <span style="font-size:12px; color:#9ca3af;"><?php _e('After saving, go to WP Survey → Results → Generate Analysis', 'wp-survey'); ?></span>
                 </div>
             </form>
         </div>
