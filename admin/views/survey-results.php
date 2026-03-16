@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ── Generate Report — 4 chained AJAX calls ───────────────────────
     var SECTIONS = [
         { key: 'overview',     label: '<?php echo esc_js(__('Writing executive overview…','wp-survey')); ?>',       step: '1/4' },
-        { key: 'questions',    label: '<?php echo esc_js(__('Analysing all questions…','wp-survey')); ?>',          step: '2/4' },
+        { key: 'questions',    label: '<?php echo esc_js(__('Analysing all questions (may take multiple calls for large surveys)…','wp-survey')); ?>',          step: '2/4' },
         { key: 'cross',        label: '<?php echo esc_js(__('Finding cross-question patterns…','wp-survey')); ?>', step: '3/4' },
         { key: 'conclusions',  label: '<?php echo esc_js(__('Writing conclusions…','wp-survey')); ?>',              step: '4/4' },
     ];
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
         jQuery.ajax({
             url:     wpSurvey.ajaxurl,
             method:  'POST',
-            timeout: 120000,   // 2 min per section — plenty for one AI call
+            timeout: 180000,   // 3 min — questions section batches internally
             data: {
                 action:    'wps_generate_report',
                 nonce:     REPORT_NONCE,

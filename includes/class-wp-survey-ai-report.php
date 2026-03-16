@@ -66,9 +66,31 @@ class WP_Survey_AI_Report {
                 return [ 'success' => true, 'done' => false ];
 
             case 'questions':
-                $r = self::call( $api_key, $model, $system, self::p_questions( $data ) );
-                if ( ! $r['success'] ) { update_option( self::key_status( $survey_id ), 'error' ); return [ 'success' => false, 'error' => $r['error'] ]; }
-                $report['questions'] = $r['data'];
+                // Split into batches of 5 to avoid token limit truncation
+                $all_questions = [];
+                if ( $survey->survey_type === 'multi-question' ) {
+                    $q_list = WP_Survey_Database::get_questions( $survey_id );
+                } else {
+                    // Treat simple survey as one "question"
+                    $q_list = [ (object)[ 'id' => 0, 'question_text' => $survey->question ] ];
+                }
+
+                $batch_size = 5;
+                $batches    = array_chunk( $q_list, $batch_size );
+
+                foreach ( $batches as $bi => $batch ) {
+                    $batch_data = self::build_batch_data( $survey_id, $survey, $batch, count( $batches ), $bi + 1 );
+                    $r = self::call( $api_key, $model, $system, self::p_questions_batch( $batch_data, $bi + 1, count( $batches ) ) );
+                    if ( ! $r['success'] ) {
+                        update_option( self::key_status( $survey_id ), 'error' );
+                        return [ 'success' => false, 'error' => "Questions batch " . ( $bi + 1 ) . ": " . $r['error'] ];
+                    }
+                    if ( ! empty( $r['data']['questions'] ) ) {
+                        $all_questions = array_merge( $all_questions, $r['data']['questions'] );
+                    }
+                }
+
+                $report['questions'] = [ 'questions' => $all_questions ];
                 update_option( self::key_report( $survey_id ), $report );
                 return [ 'success' => true, 'done' => false ];
 
@@ -110,6 +132,75 @@ class WP_Survey_AI_Report {
     }
 
     // ── Prompt builders ───────────────────────────────────────────────────────
+
+    private static function p_questions_batch( string $d, int $batch_num, int $total_batches ): string {
+        $context = $total_batches > 1
+            ? "This is batch {$batch_num} of {$total_batches}. Analyze ONLY the questions listed below."
+            : "Analyze the question below.";
+        return "Analyze each question in this batch. {$context}\n\n" .
+               "Return a JSON object:\n" .
+               "{\n  \"questions\": [\n    {\n" .
+               "      \"question\": \"exact question text\",\n" .
+               "      \"leading_choice\": \"winner name\",\n" .
+               "      \"leading_pct\": \"e.g. 80.3%\",\n" .
+               "      \"runner_up\": \"2nd place name and percentage\",\n" .
+               "      \"analysis\": \"2-3 paragraphs: what this result means, why voters lean this way, what it reveals about public opinion\",\n" .
+               "      \"notable\": \"1 sentence on the most surprising or significant aspect\"\n" .
+               "    }\n  ]\n}\n\n" .
+               "IMPORTANT: Include one entry for every question listed. Keep each analysis concise — 2 paragraphs max.\n\n" .
+               "Data:\n{$d}\n\nJSON only:";
+    }
+
+    private static function build_batch_data( int $survey_id, $survey, array $q_list, int $total_batches, int $batch_num ): string {
+        global $wpdb;
+        $rt    = $wpdb->prefix . 'survey_responses';
+        $total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $rt WHERE survey_id=%d", $survey_id ) );
+
+        $lines = [
+            "SURVEY: {$survey->title}",
+            "Total responses: {$total}",
+            $total_batches > 1 ? "Batch {$batch_num}/{$total_batches}" : "",
+            "",
+            "QUESTIONS TO ANALYZE:",
+        ];
+
+        if ( $survey->survey_type === 'multi-question' ) {
+            // Figure out the offset so question numbers are correct
+            $all_q   = WP_Survey_Database::get_questions( $survey_id );
+            $q_index = 0;
+            $offset  = ( $batch_num - 1 ) * 5; // batch_size = 5
+
+            foreach ( $q_list as $q ) {
+                $global_idx = $offset + $q_index + 1;
+                $qt = (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $rt WHERE survey_id=%d AND question_id=%d", $survey_id, $q->id
+                ) );
+                $lines[] = "";
+                $lines[] = "Q{$global_idx}: {$q->question_text} ({$qt} answers)";
+                foreach ( WP_Survey_Database::get_choices( $survey_id, $q->id ) as $c ) {
+                    $v   = (int) $wpdb->get_var( $wpdb->prepare(
+                        "SELECT COUNT(*) FROM $rt WHERE survey_id=%d AND question_id=%d AND choice_id=%d",
+                        $survey_id, $q->id, $c->id
+                    ) );
+                    $pct = $qt > 0 ? round( $v / $qt * 100, 1 ) : 0;
+                    $lines[] = "  • {$c->title}: {$v} votes ({$pct}%)";
+                }
+                $q_index++;
+            }
+        } else {
+            $lines[] = "";
+            $lines[] = "Question: {$survey->question} ({$total} answers)";
+            foreach ( WP_Survey_Database::get_choices( $survey_id ) as $c ) {
+                $v   = (int) $wpdb->get_var( $wpdb->prepare(
+                    "SELECT COUNT(*) FROM $rt WHERE survey_id=%d AND choice_id=%d", $survey_id, $c->id
+                ) );
+                $pct = $total > 0 ? round( $v / $total * 100, 1 ) : 0;
+                $lines[] = "  • {$c->title}: {$v} votes ({$pct}%)";
+            }
+        }
+
+        return implode( "\n", array_filter( $lines, fn($l) => $l !== null ) );
+    }
 
     private static function p_overview( string $d ): string {
         return "Analyze this survey and return a JSON object:\n\n" .
