@@ -14,6 +14,9 @@
                 <a href="<?php echo admin_url('admin.php?page=wp-survey-analytics&survey_id=' . $selected_id); ?>" class="button button-secondary">
                     📊 <?php _e('Analytics', 'wp-survey'); ?>
                 </a>
+                <button type="button" id="wps-export-pdf-btn" class="button button-primary" style="display:flex;align-items:center;gap:6px;">
+                    <span id="wps-pdf-btn-icon">⬇️</span> <?php _e('Export PDF', 'wp-survey'); ?>
+                </button>
             </div>
             <?php endif; ?>
         </div>
@@ -73,11 +76,25 @@
     </div>
     <?php endif; ?>
 
+    <!-- PDF capture starts here -->
+    <div id="wps-pdf-content">
+
+    <!-- ── PDF cover header (only visible during export) ──────── -->
+    <div id="wps-pdf-cover" style="display:none; padding:28px 28px 20px; background:linear-gradient(135deg,#1e1b4b 0%,#312e81 60%,#4338ca 100%); border-radius:14px; margin-bottom:24px; color:#fff;">
+        <div style="font-size:11px; color:#a5b4fc; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Survey Results</div>
+        <div style="font-size:22px; font-weight:700; margin-bottom:8px;"><?php echo esc_html($survey->title); ?></div>
+        <div style="display:flex; gap:20px; font-size:12px; color:#c7d2fe; flex-wrap:wrap;">
+            <span>📅 <?php echo date_i18n(get_option('date_format')); ?></span>
+            <span>🗳️ <?php echo number_format($results['total_votes']); ?> <?php _e('total votes', 'wp-survey'); ?></span>
+            <span><?php echo $multi_votes ? '⚠️ ' . __('Multiple votes enabled', 'wp-survey') : '🔒 ' . __('One vote per person', 'wp-survey'); ?></span>
+        </div>
+    </div>
+
     <!-- ── Summary bar ───────────────────────────────────────── -->
     <div class="wps-results-summary">
         <div class="wps-results-summary-item">
             <span class="wps-results-summary-number"><?php echo number_format($results['total_votes']); ?></span>
-            <span class="wps-results-summary-label"><?php _e('Answeres', 'wp-survey'); ?></span>
+            <span class="wps-results-summary-label"><?php _e('Total Votes', 'wp-survey'); ?></span>
         </div>
         <div class="wps-results-summary-divider"></div>
         <div class="wps-results-summary-item">
@@ -196,6 +213,13 @@
     </div><!-- .wps-results-question-card -->
     <?php endforeach; ?>
 
+    <!-- PDF footer (only visible during export) -->
+    <div id="wps-pdf-footer" style="display:none; padding:14px 20px; text-align:center; font-size:11px; color:#9ca3af; border-top:1px solid #e5e7eb; margin-top:8px;">
+        <?php echo esc_html(get_bloginfo('name')); ?> · <?php echo esc_html(get_site_url()); ?> · <?php _e('Generated', 'wp-survey'); ?> <?php echo date_i18n(get_option('date_format') . ' ' . get_option('time_format')); ?>
+    </div>
+
+    </div><!-- #wps-pdf-content -->
+
     <?php endif; // end has votes ?>
 
 </div><!-- .wps-results-wrap -->
@@ -258,6 +282,137 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- ── PDF Export: html2canvas + jsPDF ───────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function() {
+    var btn = document.getElementById('wps-export-pdf-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', function() {
+        var content = document.getElementById('wps-pdf-content');
+        if (!content) return;
+
+        // UI feedback
+        btn.disabled = true;
+        btn.innerHTML = '<span style="display:inline-block;animation:wps-spin 0.8s linear infinite;margin-right:4px;">⏳</span> Generating…';
+
+        // Show PDF-only elements, hide screen-only ones
+        var cover  = document.getElementById('wps-pdf-cover');
+        var footer = document.getElementById('wps-pdf-footer');
+        if (cover)  cover.style.display  = 'block';
+        if (footer) footer.style.display = 'block';
+
+        // Wait a frame so the cover renders before capture
+        requestAnimationFrame(function() {
+            setTimeout(function() {
+
+                html2canvas(content, {
+                    scale:           2,          // 2× for crisp text
+                    useCORS:         true,
+                    allowTaint:      true,
+                    backgroundColor: '#f9fafb',  // matches WP admin background
+                    logging:         false,
+                    windowWidth:     1100,        // fixed capture width
+                    onclone: function(clonedDoc) {
+                        // Inside the clone: ensure all bar fills are at their
+                        // final width (animation may not have finished)
+                        clonedDoc.querySelectorAll('.wps-results-bar-fill').forEach(function(bar) {
+                            bar.style.transition = 'none';
+                            bar.style.width      = bar.dataset.pct + '%';
+                        });
+                        // Expand the content width for consistent layout
+                        var wrap = clonedDoc.getElementById('wps-pdf-content');
+                        if (wrap) { wrap.style.width = '1060px'; wrap.style.maxWidth = '1060px'; }
+                    }
+                }).then(function(canvas) {
+
+                    var imgData   = canvas.toDataURL('image/png');
+                    var { jsPDF } = window.jspdf;
+
+                    // A4 page: 210mm × 297mm
+                    var pageW  = 210;
+                    var pageH  = 297;
+                    var margin = 10;  // mm
+                    var usableW = pageW - margin * 2;
+
+                    // Scale image to fit usable width
+                    var imgW   = usableW;
+                    var imgH   = (canvas.height / canvas.width) * imgW;
+
+                    var pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                    var posY   = margin;
+
+                    // Slice image into pages
+                    var totalH    = imgH;
+                    var pageContent = pageH - margin * 2;
+                    var srcY      = 0;    // current Y in mm of the source image
+                    var pageNum   = 0;
+
+                    while (srcY < totalH) {
+                        if (pageNum > 0) pdf.addPage();
+
+                        var sliceH = Math.min(pageContent, totalH - srcY);
+
+                        // Calculate pixel crop from the original canvas
+                        var pxPerMm   = canvas.width / imgW;
+                        var srcYpx    = srcY   * pxPerMm;
+                        var sliceHpx  = sliceH * pxPerMm;
+
+                        // Crop canvas slice
+                        var slice  = document.createElement('canvas');
+                        slice.width  = canvas.width;
+                        slice.height = Math.ceil(sliceHpx);
+                        slice.getContext('2d').drawImage(
+                            canvas,
+                            0, srcYpx, canvas.width, sliceHpx,
+                            0, 0,      canvas.width, sliceHpx
+                        );
+
+                        pdf.addImage(
+                            slice.toDataURL('image/png'),
+                            'PNG',
+                            margin, margin,
+                            imgW, sliceH
+                        );
+
+                        srcY   += sliceH;
+                        pageNum++;
+                    }
+
+                    // Build filename from survey title + date
+                    var title    = <?php echo wp_json_encode($results ? $results['survey']->title : 'results'); ?>;
+                    var dateStr  = new Date().toISOString().slice(0,10);
+                    var filename = (title + '-results-' + dateStr)
+                                    .toLowerCase()
+                                    .replace(/[^a-z0-9]+/g, '-')
+                                    .replace(/^-+|-+$/g, '')
+                                    + '.pdf';
+
+                    pdf.save(filename);
+
+                }).catch(function(err) {
+                    console.error('PDF export error:', err);
+                    alert('PDF export failed. See console for details.');
+                }).finally(function() {
+                    // Restore UI
+                    if (cover)  cover.style.display  = 'none';
+                    if (footer) footer.style.display = 'none';
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>⬇️</span> Export PDF';
+                });
+
+            }, 150); // small delay so cover renders
+        });
+    });
+})();
+</script>
+<style>
+@keyframes wps-spin { to { transform: rotate(360deg); } }
+#wps-export-pdf-btn { cursor: pointer; }
+</style>
 <?php endif; ?>
 
 <style>
