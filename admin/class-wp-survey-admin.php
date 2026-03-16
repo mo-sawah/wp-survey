@@ -12,6 +12,10 @@ class WP_Survey_Admin {
         add_action('wp_ajax_wp_survey_save_question',     [$this, 'ajax_save_question']);
         add_action('wp_ajax_wp_survey_delete_question',   [$this, 'ajax_delete_question']);
         add_action('wp_ajax_wp_survey_export_emails',     [$this, 'ajax_export_emails']);
+        // AI Report
+        add_action('wp_ajax_wps_generate_report',         [$this, 'ajax_generate_report']);
+        add_action('wp_ajax_wps_report_status',           [$this, 'ajax_report_status']);
+        add_action('wp_ajax_wps_delete_report',           [$this, 'ajax_delete_report']);
     }
 
     public function add_admin_menu() {
@@ -36,15 +40,16 @@ class WP_Survey_Admin {
         wp_enqueue_style('wp-survey-admin',  WP_SURVEY_PLUGIN_URL . 'assets/css/admin.css', [], WP_SURVEY_VERSION);
         wp_enqueue_script('wp-survey-admin', WP_SURVEY_PLUGIN_URL . 'assets/js/admin.js', ['jquery'], WP_SURVEY_VERSION, true);
 
-        // Chart.js only on pages that need it
+        // Chart.js on analytics AND results pages
         if (strpos($hook, 'wp-survey-analytics') !== false || strpos($hook, 'wp-survey-results') !== false) {
             wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', [], '4.4.0', true);
         }
 
         wp_localize_script('wp-survey-admin', 'wpSurvey', [
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce'   => wp_create_nonce('wp_survey_nonce'),
-            'strings' => [
+            'ajaxurl'     => admin_url('admin-ajax.php'),
+            'nonce'       => wp_create_nonce('wp_survey_nonce'),
+            'report_nonce'=> wp_create_nonce('wps_report_nonce'),
+            'strings'     => [
                 'confirmDelete' => __('Are you sure you want to delete this?', 'wp-survey'),
                 'error'         => __('An error occurred', 'wp-survey'),
                 'saved'         => __('Saved successfully', 'wp-survey'),
@@ -104,13 +109,11 @@ class WP_Survey_Admin {
     public function render_results_page() {
         $surveys     = WP_Survey_Database::get_all_surveys();
         $selected_id = isset($_GET['survey_id']) ? intval($_GET['survey_id']) : 0;
-
-        if (!$selected_id && !empty($surveys)) {
-            $selected_id = $surveys[0]->id;
-        }
-
-        $results = $selected_id ? WP_Survey_Database::get_results($selected_id) : null;
-
+        if (!$selected_id && !empty($surveys)) $selected_id = $surveys[0]->id;
+        $results       = $selected_id ? WP_Survey_Database::get_results($selected_id) : null;
+        $ai_report     = $selected_id ? WP_Survey_AI_Report::get_report($selected_id) : null;
+        $ai_status     = $selected_id ? WP_Survey_AI_Report::get_status($selected_id) : 'idle';
+        $ai_configured = !empty(get_option('wps_ai_api_key', ''));
         include WP_SURVEY_PLUGIN_DIR . 'admin/views/survey-results.php';
     }
 
@@ -217,6 +220,49 @@ class WP_Survey_Admin {
         }
         fclose($output);
         exit;
+    }
+
+
+    // ── AI Report AJAX ────────────────────────────────────────────────────────
+
+    public function ajax_generate_report() {
+        check_ajax_referer('wps_report_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Unauthorized']);
+
+        $survey_id = intval($_POST['survey_id']);
+        if (!$survey_id) wp_send_json_error(['message' => 'No survey selected.']);
+
+        @set_time_limit(300);
+        @ignore_user_abort(true);
+
+        if (!class_exists('WP_Survey_AI_Report')) {
+            require_once WP_SURVEY_PLUGIN_DIR . 'includes/class-wp-survey-ai-report.php';
+        }
+
+        $result = (new WP_Survey_AI_Report())->generate($survey_id);
+
+        if ($result['success']) {
+            wp_send_json_success(['message' => 'Report generated.', 'report' => $result['report']]);
+        } else {
+            wp_send_json_error(['message' => $result['error']]);
+        }
+    }
+
+    public function ajax_report_status() {
+        check_ajax_referer('wps_report_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error();
+        $survey_id = intval($_POST['survey_id']);
+        wp_send_json_success([
+            'status' => WP_Survey_AI_Report::get_status($survey_id),
+            'report' => WP_Survey_AI_Report::get_report($survey_id),
+        ]);
+    }
+
+    public function ajax_delete_report() {
+        check_ajax_referer('wps_report_nonce', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error();
+        WP_Survey_AI_Report::delete_report(intval($_POST['survey_id']));
+        wp_send_json_success(['message' => 'Report deleted.']);
     }
 
     // ── IMPORT / EXPORT ─────────────────────────────────────────────
