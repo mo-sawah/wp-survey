@@ -563,453 +563,209 @@ document.addEventListener('DOMContentLoaded', function() {
     var pdfBtn = document.getElementById('wps-export-pdf-btn');
     if (!pdfBtn) return;
 
-    var M = 14;           // margin mm
+    var M  = 12;             // margin mm
     var PW = 210, PH = 297;
-    var UW = PW - M * 2; // usable width  = 182mm
-    var UH = PH - M * 2; // usable height = 269mm
+    var UW = PW - M * 2;     // 186mm usable width
     var SCALE = 2, CAP_W = 1060;
 
-    var h2cOpts = {
-        scale: SCALE, useCORS: true, allowTaint: true, backgroundColor: '#ffffff',
-        logging: false, windowWidth: CAP_W,
-        onclone: function(d) {
-            d.querySelectorAll('.wps-results-bar-fill').forEach(function(b){
-                b.style.transition='none'; b.style.width=b.dataset.pct+'%';
-            });
-        }
-    };
+    // Shared html2canvas options
+    function makeH2cOpts(bg) {
+        return {
+            scale: SCALE, useCORS: true, allowTaint: true,
+            backgroundColor: bg || '#ffffff',
+            logging: false, windowWidth: CAP_W,
+            onclone: function(d) {
+                d.querySelectorAll('.wps-results-bar-fill').forEach(function(b){
+                    b.style.transition = 'none';
+                    b.style.width = b.dataset.pct + '%';
+                });
+                // Ensure pdf-only items are visible in clone
+                ['wps-pdf-cover','wps-pdf-footer'].forEach(function(id){
+                    var el = d.getElementById(id);
+                    if (el) el.style.display = 'block';
+                });
+            }
+        };
+    }
 
-    function captureEl(el) {
-        return html2canvas(el, h2cOpts).then(function(c) {
+    // Capture element → {img, mmH}
+    function cap(el, bg) {
+        return html2canvas(el, makeH2cOpts(bg)).then(function(c) {
             return { img: c.toDataURL('image/png'), mmH: (c.height / c.width) * UW };
         });
     }
 
-    // ── Native text helpers ────────────────────────────────────────
-    function textBlock(pdf, text, x, y, maxW, lineH, maxY) {
-        // Splits text and writes lines, auto-adding pages. Returns new Y.
-        if (!text) return y;
-        var lines = pdf.splitTextToSize(text, maxW);
-        for (var i = 0; i < lines.length; i++) {
-            if (y + lineH > maxY) { pdf.addPage(); y = M; }
-            pdf.text(lines[i], x, y);
-            y += lineH;
-        }
-        return y;
+    // Place image on pdf, starting new page if needed. Returns new Y.
+    function place(pdf, item, y, gap) {
+        gap = gap || 0;
+        var h = item.mmH;
+        // If taller than a full page, shrink to fit
+        if (h > PH - M * 2) h = PH - M * 2;
+        if (y + gap + h > PH - M) { pdf.addPage(); y = M; gap = 0; }
+        pdf.addImage(item.img, 'PNG', M, y + gap, UW, h);
+        return y + gap + h;
     }
 
-    function sectionDivider(pdf, y) {
-        // Thin decorative line between sections
-        if (y + 6 > PH - M) { pdf.addPage(); return M; }
-        pdf.setDrawColor(220, 220, 230);
-        pdf.setLineWidth(0.3);
-        pdf.line(M, y + 2, PW - M, y + 2);
-        return y + 8;
-    }
-
-    function sectionHeader(pdf, num, title, y) {
-        if (y + 14 > PH - M) { pdf.addPage(); y = M; }
-        // Coloured pill for section number
-        pdf.setFillColor(99, 102, 241);
-        pdf.roundedRect(M, y, 10, 6, 1.5, 1.5, 'F');
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text(num, M + 2, y + 4.2);
-        // Title
-        pdf.setFontSize(13);
-        pdf.setTextColor(30, 27, 75);
-        pdf.text(title, M + 13, y + 4.5);
-        y += 10;
-        // Underline
-        pdf.setDrawColor(200, 195, 250);
-        pdf.setLineWidth(0.5);
-        pdf.line(M, y, PW - M, y);
-        return y + 5;
-    }
-
-    function findingRow(pdf, num, text, y, accent) {
-        var lineH = 5, pad = 4;
-        var lines = pdf.splitTextToSize(text, UW - 18);
-        var boxH  = lines.length * lineH + pad * 2;
-        if (y + boxH > PH - M) { pdf.addPage(); y = M; }
-
-        // Background box
-        pdf.setFillColor(accent ? 240 : 248, accent ? 253 : 247, accent ? 244 : 255);
-        pdf.roundedRect(M, y, UW, boxH, 2, 2, 'F');
-        pdf.setDrawColor(accent ? 167 : 221, accent ? 243 : 216, accent ? 208 : 254);
-        pdf.setLineWidth(0.3);
-        pdf.roundedRect(M, y, UW, boxH, 2, 2, 'S');
-
-        // Number circle
-        pdf.setFillColor(accent ? 5 : 99, accent ? 150 : 102, accent ? 105 : 241);
-        pdf.circle(M + 5, y + boxH / 2, 3.5, 'F');
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text(String(num), M + 3.8, y + boxH / 2 + 2.2);
-
-        // Text
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(9);
-        pdf.setTextColor(55, 65, 81);
-        for (var i = 0; i < lines.length; i++) {
-            pdf.text(lines[i], M + 11, y + pad + (i * lineH) + 3.5);
-        }
-        return y + boxH + 3;
-    }
-
-    function questionBlock(pdf, qi, qd, y) {
-        var lineH = 5;
-        if (y + 20 > PH - M) { pdf.addPage(); y = M; }
-
-        // Question header bar
-        var qHeaderLines = pdf.splitTextToSize('Q'+(qi+1)+': '+(qd.question||''), UW - 30);
-        var qHeaderH = qHeaderLines.length * lineH + 8;
-        pdf.setFillColor(30, 27, 75);
-        pdf.roundedRect(M, y, UW, qHeaderH, 2, 2, 'F');
-
-        // Q badge
-        pdf.setFillColor(255, 255, 255, 0.2);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(8);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text('Q'+(qi+1), M + 3, y + qHeaderH/2 + 2.5);
-
-        // Question text
-        pdf.setFontSize(9);
-        for (var i = 0; i < qHeaderLines.length; i++) {
-            pdf.text(qHeaderLines[i], M + 14, y + 4.5 + (i * lineH));
-        }
-
-        // Leader badge
-        if (qd.leading_choice) {
-            var badge = '🏆 ' + qd.leading_choice + (qd.leading_pct ? ' ('+qd.leading_pct+')' : '');
-            pdf.setFillColor(245, 158, 11, 0.25);
-            pdf.setFontSize(7.5);
-            pdf.setTextColor(253, 230, 138);
-            // right-aligned
-            var bw = pdf.getTextWidth(badge) + 6;
-            pdf.text(badge, PW - M - bw, y + qHeaderH/2 + 2.5);
-        }
-        y += qHeaderH + 3;
-
-        // Analysis paragraphs
-        if (qd.analysis) {
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(9);
-            pdf.setTextColor(55, 65, 81);
-            var paras = qd.analysis.split('\n\n');
-            for (var pi = 0; pi < paras.length; pi++) {
-                if (!paras[pi].trim()) continue;
-                y = textBlock(pdf, paras[pi].trim(), M, y, UW, lineH, PH - M);
-                y += 3;
-            }
-        }
-
-        // Notable callout
-        if (qd.notable) {
-            var notLines = pdf.splitTextToSize('💡 ' + qd.notable, UW - 8);
-            var notH = notLines.length * lineH + 6;
-            if (y + notH > PH - M) { pdf.addPage(); y = M; }
-            pdf.setFillColor(254, 249, 236);
-            pdf.setDrawColor(253, 230, 138);
-            pdf.setLineWidth(0.3);
-            pdf.roundedRect(M, y, UW, notH, 2, 2, 'FD');
-            pdf.setFont('helvetica', 'italic');
-            pdf.setFontSize(8.5);
-            pdf.setTextColor(146, 64, 14);
-            for (var ni = 0; ni < notLines.length; ni++) {
-                pdf.text(notLines[ni], M + 4, y + 4 + (ni * lineH));
-            }
-            y += notH + 3;
-        }
-
-        // Separator
-        pdf.setDrawColor(243, 244, 246);
-        pdf.setLineWidth(0.3);
-        pdf.line(M, y, PW - M, y);
-        return y + 6;
-    }
-
-    // ── Main export function ───────────────────────────────────────
     pdfBtn.addEventListener('click', function() {
         pdfBtn.disabled = true;
-        document.getElementById('wps-pdf-icon').innerHTML = '<span style="display:inline-block;animation:wps-spin 0.8s linear infinite;">⏳</span>';
+        document.getElementById('wps-pdf-icon').innerHTML =
+            '<span style="display:inline-block;animation:wps-spin 0.8s linear infinite;">⏳</span>';
 
         var cover  = document.getElementById('wps-pdf-cover');
         var footer = document.getElementById('wps-pdf-footer');
         if (cover)  cover.style.display  = 'block';
         if (footer) footer.style.display = 'block';
 
-        // Capture: cover + summary bar + question cards only (text parts rendered natively)
-        var snapTargets = [];
-        if (cover) snapTargets.push({ el: cover, type: 'cover' });
+        // ── Collect all capture targets in order ──────────────────
+        // Each entry: { el, type }
+        // type: 'cover' | 'report-bar' | 'report-chunk' | 'summary' | 'card' | 'footer'
 
+        var targets = [];
+
+        // 1. Cover
+        if (cover) targets.push({ el: cover, type: 'cover' });
+
+        // 2. Report chunks (topbar + each atomic sub-element inside sections)
+        var reportWrap = document.getElementById('wps-ai-report-wrap');
+        if (reportWrap && reportWrap.offsetHeight > 0) {
+            var topbar = reportWrap.querySelector('.wps-report-topbar');
+            if (topbar) targets.push({ el: topbar, type: 'report-bar' });
+
+            reportWrap.querySelectorAll('.wps-report-section').forEach(function(sec) {
+                // Section title
+                var title = sec.querySelector('.wps-report-section-title');
+                if (title) targets.push({ el: title, type: 'report-chunk' });
+
+                // Every direct meaningful child in the body
+                var body = sec.querySelector('.wps-report-section-body');
+                if (body) {
+                    // Walk children — each is its own capture
+                    Array.from(body.children).forEach(function(child) {
+                        // For question blocks, capture sub-elements individually
+                        if (child.classList.contains('wps-report-q-block')) {
+                            // Header row
+                            var qHead = child.querySelector('.wps-report-q-header');
+                            if (qHead) targets.push({ el: qHead, type: 'report-chunk' });
+                            // Each paragraph
+                            child.querySelectorAll('p').forEach(function(p) {
+                                targets.push({ el: p, type: 'report-chunk' });
+                            });
+                            // Notable callout
+                            var notable = child.querySelector('.wps-report-notable');
+                            if (notable) targets.push({ el: notable, type: 'report-chunk' });
+                            // Separator line — skip (too thin to capture)
+                        } else if (child.classList.contains('wps-report-findings')) {
+                            // Each finding row separately
+                            Array.from(child.children).forEach(function(row) {
+                                targets.push({ el: row, type: 'report-chunk' });
+                            });
+                        } else if (child.tagName === 'P' || child.tagName === 'H4') {
+                            targets.push({ el: child, type: 'report-chunk' });
+                        } else {
+                            // Catch-all (callout boxes, correlation items, etc.)
+                            targets.push({ el: child, type: 'report-chunk' });
+                        }
+                    });
+                }
+            });
+        }
+
+        // 3. Summary bar
         var sumBar = document.querySelector('.wps-results-summary');
-        if (sumBar) snapTargets.push({ el: sumBar, type: 'summary' });
+        if (sumBar) targets.push({ el: sumBar, type: 'summary' });
 
+        // 4. Question cards
         document.querySelectorAll('.wps-results-question-card').forEach(function(c) {
-            snapTargets.push({ el: c, type: 'card' });
+            targets.push({ el: c, type: 'card' });
         });
-        if (footer) snapTargets.push({ el: footer, type: 'footer' });
 
+        // 5. Footer
+        if (footer) targets.push({ el: footer, type: 'footer' });
+
+        // ── Capture sequentially ──────────────────────────────────
         requestAnimationFrame(function(){ setTimeout(function() {
 
-            // Capture visual elements
             var chain = Promise.resolve([]);
-            snapTargets.forEach(function(s) {
-                chain = chain.then(function(res) {
-                    return captureEl(s.el).then(function(r) {
-                        res.push({ img: r.img, mmH: r.mmH, type: s.type });
-                        return res;
+            targets.forEach(function(t) {
+                chain = chain.then(function(arr) {
+                    // Skip invisible/zero-height elements
+                    if (!t.el || t.el.offsetHeight < 2) {
+                        arr.push(null);
+                        return arr;
+                    }
+                    return cap(t.el, t.type === 'cover' ? null : '#ffffff').then(function(r) {
+                        arr.push({ img: r.img, mmH: r.mmH, type: t.type });
+                        return arr;
                     });
                 });
             });
 
-            chain.then(function(snaps) {
+            chain.then(function(items) {
                 var { jsPDF } = window.jspdf;
-                var pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+                var pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                var y = M;
+                var onCoverPage = false;
 
-                // ── Page 1: Cover (full bleed) ─────────────────────
-                var coverSnap = snaps.find(function(s){ return s.type==='cover'; });
-                if (coverSnap) {
-                    // Stretch to full page
-                    pdf.addImage(coverSnap.img, 'PNG', 0, 0, PW, PH);
-                }
+                items.forEach(function(item) {
+                    if (!item) return; // skipped element
 
-                // ── Report text pages (if report exists) ──────────
-                if (REPORT_DATA) {
-                    pdf.addPage();
-                    var y = M;
-                    var r = REPORT_DATA;
-                    var o  = r.overview    || {};
-                    var q  = r.questions   || {};
-                    var cr = r.cross       || {};
-                    var co = r.conclusions || {};
-                    var meta = r._meta || {};
-
-                    // Report title bar
-                    pdf.setFillColor(30, 27, 75);
-                    pdf.rect(0, 0, PW, 14, 'F');
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(10);
-                    pdf.setTextColor(255, 255, 255);
-                    pdf.text('<?php echo esc_js(__('Research Analysis Report','wp-survey')); ?>', M, 9.5);
-                    if (meta.generated_at) {
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(7.5);
-                        pdf.setTextColor(165, 180, 252);
-                        pdf.text(meta.generated_at, PW - M - pdf.getTextWidth(meta.generated_at), 9.5);
-                    }
-                    y = 22;
-
-                    // ── Section 01: Executive Summary ──────────────
-                    if (o.executive_summary || (o.key_findings && o.key_findings.length)) {
-                        y = sectionHeader(pdf, '01', '<?php echo esc_js(__('Executive Summary','wp-survey')); ?>', y);
-                        if (o.executive_summary) {
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setFontSize(9.5);
-                            pdf.setTextColor(55, 65, 81);
-                            o.executive_summary.split('\n\n').forEach(function(p) {
-                                if (!p.trim()) return;
-                                y = textBlock(pdf, p.trim(), M, y, UW, 5, PH - M);
-                                y += 4;
-                            });
-                        }
-                        if (o.participation_note) {
-                            // Callout box
-                            var pnLines = pdf.splitTextToSize(o.participation_note, UW - 10);
-                            var pnH = pnLines.length * 5 + 8;
-                            if (y + pnH > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFillColor(240, 244, 255);
-                            pdf.setDrawColor(99, 102, 241);
-                            pdf.setLineWidth(1);
-                            pdf.line(M, y, M, y + pnH);
-                            pdf.setLineWidth(0.1);
-                            pdf.setFillColor(240, 244, 255);
-                            pdf.rect(M + 1, y, UW - 1, pnH, 'F');
-                            pdf.setFont('helvetica', 'italic');
-                            pdf.setFontSize(9);
-                            pdf.setTextColor(55, 48, 163);
-                            pnLines.forEach(function(l, li) { pdf.text(l, M + 5, y + 5 + li * 5); });
-                            y += pnH + 5;
-                        }
-                        if (o.key_findings && o.key_findings.length) {
-                            if (y + 8 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(8);
-                            pdf.setTextColor(100, 100, 120);
-                            pdf.text('<?php echo strtoupper(esc_js(__('Key Findings','wp-survey'))); ?>', M, y);
-                            y += 5;
-                            o.key_findings.forEach(function(f, fi) {
-                                y = findingRow(pdf, fi + 1, f, y, false);
-                            });
-                        }
-                        y = sectionDivider(pdf, y);
+                    // ── COVER — full bleed, own page ──────────────
+                    if (item.type === 'cover') {
+                        pdf.addImage(item.img, 'PNG', 0, 0, PW, PH);
+                        pdf.addPage();
+                        y = M;
+                        onCoverPage = false;
+                        return;
                     }
 
-                    // ── Section 02: Question Analysis ──────────────
-                    if (q.questions && q.questions.length) {
-                        y = sectionHeader(pdf, '02', '<?php echo esc_js(__('Question-by-Question Analysis','wp-survey')); ?>', y);
-                        q.questions.forEach(function(qd, qi) {
-                            y = questionBlock(pdf, qi, qd, y);
-                        });
-                        y = sectionDivider(pdf, y);
+                    // ── REPORT BAR — flush with top, no margin ────
+                    if (item.type === 'report-bar') {
+                        // Ensure we're at top of a fresh page
+                        if (y > M + 2) { pdf.addPage(); y = 0; }
+                        var h = item.mmH;
+                        if (h > PH - M) h = PH - M;
+                        pdf.addImage(item.img, 'PNG', 0, 0, PW, h);
+                        y = h + 4;
+                        return;
                     }
 
-                    // ── Section 03: Cross Patterns ─────────────────
-                    if (cr && (cr.patterns || cr.correlations)) {
-                        y = sectionHeader(pdf, '03', '<?php echo esc_js(__('Cross-Question Patterns','wp-survey')); ?>', y);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(9.5);
-                        pdf.setTextColor(55, 65, 81);
-                        if (cr.patterns) {
-                            cr.patterns.split('\n\n').forEach(function(p) {
-                                if (!p.trim()) return;
-                                y = textBlock(pdf, p.trim(), M, y, UW, 5, PH - M);
-                                y += 4;
-                            });
-                        }
-                        if (cr.voter_segments) {
-                            if (y + 10 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(9.5);
-                            pdf.setTextColor(30, 27, 75);
-                            pdf.text('<?php echo esc_js(__('Voter Segments','wp-survey')); ?>', M, y);
-                            y += 6;
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setTextColor(55, 65, 81);
-                            cr.voter_segments.split('\n\n').forEach(function(p) {
-                                if (!p.trim()) return;
-                                y = textBlock(pdf, p.trim(), M, y, UW, 5, PH - M);
-                                y += 4;
-                            });
-                        }
-                        if (cr.overall_mood) {
-                            if (y + 12 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(9.5);
-                            pdf.setTextColor(30, 27, 75);
-                            pdf.text('<?php echo esc_js(__('Overall Public Mood','wp-survey')); ?>', M, y);
-                            y += 6;
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setTextColor(55, 65, 81);
-                            y = textBlock(pdf, cr.overall_mood, M, y, UW, 5, PH - M);
-                            y += 4;
-                        }
-                        if (cr.correlations && cr.correlations.length) {
-                            if (y + 8 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(8);
-                            pdf.setTextColor(100, 100, 120);
-                            pdf.text('<?php echo strtoupper(esc_js(__('Correlations','wp-survey'))); ?>', M, y);
-                            y += 5;
-                            cr.correlations.forEach(function(c, ci) {
-                                y = findingRow(pdf, ci + 1, c, y, false);
-                            });
-                        }
-                        y = sectionDivider(pdf, y);
+                    // ── REPORT CHUNKS — flow with 2mm gaps ────────
+                    if (item.type === 'report-chunk') {
+                        y = place(pdf, item, y, 2);
+                        return;
                     }
 
-                    // ── Section 04: Conclusions ────────────────────
-                    if (co.main_conclusion || co.recommendations) {
-                        y = sectionHeader(pdf, '04', '<?php echo esc_js(__('Conclusions & Recommendations','wp-survey')); ?>', y);
-                        // Green accent left border for this section
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(9.5);
-                        pdf.setTextColor(55, 65, 81);
-                        if (co.main_conclusion) {
-                            co.main_conclusion.split('\n\n').forEach(function(p) {
-                                if (!p.trim()) return;
-                                y = textBlock(pdf, p.trim(), M, y, UW, 5, PH - M);
-                                y += 4;
-                            });
-                        }
-                        if (co.political_implications) {
-                            if (y + 10 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(9.5);
-                            pdf.setTextColor(6, 95, 70);
-                            pdf.text('<?php echo esc_js(__('Political Implications','wp-survey')); ?>', M, y);
-                            y += 6;
-                            pdf.setFont('helvetica', 'normal');
-                            pdf.setTextColor(55, 65, 81);
-                            co.political_implications.split('\n\n').forEach(function(p) {
-                                if (!p.trim()) return;
-                                y = textBlock(pdf, p.trim(), M, y, UW, 5, PH - M);
-                                y += 4;
-                            });
-                        }
-                        if (co.media_headlines && co.media_headlines.length) {
-                            if (y + 10 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(8);
-                            pdf.setTextColor(100, 100, 120);
-                            pdf.text('<?php echo strtoupper(esc_js(__('Suggested Headlines','wp-survey'))); ?>', M, y);
-                            y += 5;
-                            co.media_headlines.forEach(function(h, hi) {
-                                var hLines = pdf.splitTextToSize('"' + h + '"', UW - 8);
-                                var hH = hLines.length * 5 + 6;
-                                if (y + hH > PH - M) { pdf.addPage(); y = M; }
-                                pdf.setFillColor(248, 247, 255);
-                                pdf.setDrawColor(200, 195, 250);
-                                pdf.setLineWidth(0.3);
-                                pdf.roundedRect(M, y, UW, hH, 2, 2, 'FD');
-                                pdf.setFont('helvetica', 'italic');
-                                pdf.setFontSize(9);
-                                pdf.setTextColor(67, 56, 202);
-                                hLines.forEach(function(l, li){ pdf.text(l, M + 4, y + 4 + li * 5); });
-                                y += hH + 3;
-                            });
-                        }
-                        if (co.recommendations && co.recommendations.length) {
-                            if (y + 8 > PH - M) { pdf.addPage(); y = M; }
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setFontSize(8);
-                            pdf.setTextColor(100, 100, 120);
-                            pdf.text('<?php echo strtoupper(esc_js(__('Recommendations','wp-survey'))); ?>', M, y);
-                            y += 5;
-                            co.recommendations.forEach(function(rec, ri) {
-                                y = findingRow(pdf, ri + 1, rec, y, true);
-                            });
-                        }
+                    // ── SUMMARY BAR ───────────────────────────────
+                    if (item.type === 'summary') {
+                        // Always starts on a new page (visual results section)
+                        pdf.addPage();
+                        y = M;
+                        y = place(pdf, item, y, 0);
+                        y += 4;
+                        return;
                     }
-                }
 
-                // ── Visual results pages ───────────────────────────
-                pdf.addPage();
-                var vy = M;
+                    // ── QUESTION CARDS ────────────────────────────
+                    if (item.type === 'card') {
+                        y = place(pdf, item, y, 4);
+                        return;
+                    }
 
-                // Summary bar
-                var sumSnap = snaps.find(function(s){ return s.type==='summary'; });
-                if (sumSnap) {
-                    if (vy + sumSnap.mmH > PH - M) { pdf.addPage(); vy = M; }
-                    pdf.addImage(sumSnap.img, 'PNG', M, vy, UW, sumSnap.mmH);
-                    vy += sumSnap.mmH + 6;
-                }
-
-                // Question cards
-                snaps.filter(function(s){ return s.type==='card'; }).forEach(function(card) {
-                    if (vy + card.mmH > PH - M) { pdf.addPage(); vy = M; }
-                    pdf.addImage(card.img, 'PNG', M, vy, UW, card.mmH);
-                    vy += card.mmH + 5;
+                    // ── FOOTER ─────────────────────────────────────
+                    if (item.type === 'footer') {
+                        y = place(pdf, item, y, 6);
+                    }
                 });
 
-                // Footer
-                var footSnap = snaps.find(function(s){ return s.type==='footer'; });
-                if (footSnap) {
-                    if (vy + footSnap.mmH > PH - M) { pdf.addPage(); vy = M; }
-                    pdf.addImage(footSnap.img, 'PNG', M, vy, UW, footSnap.mmH);
-                }
-
-                // Save
-                var fn = (SURVEY_TITLE.replace(/[^a-z0-9]/gi,'-').toLowerCase()+'-report-'+new Date().toISOString().slice(0,10)+'.pdf');
+                var fn = (SURVEY_TITLE.replace(/[^a-z0-9]/gi, '-').toLowerCase() +
+                          '-report-' + new Date().toISOString().slice(0, 10) + '.pdf');
                 pdf.save(fn);
 
-            }).catch(function(e){ console.error(e); alert('PDF failed: '+e.message); })
-              .finally(function() {
-                if (cover)  cover.style.display  = 'none';
+            }).catch(function(e) {
+                console.error('PDF error:', e);
+                alert('PDF export failed: ' + e.message);
+            }).finally(function() {
+                if (cover)  cover.style.display = 'none';
                 if (footer) footer.style.display = 'none';
                 pdfBtn.disabled = false;
                 document.getElementById('wps-pdf-icon').innerHTML = '⬇️';
@@ -1083,6 +839,26 @@ document.addEventListener('DOMContentLoaded', function() {
 .wps-report-generating { background:#f0f4ff; border:1px solid #c7d2fe; border-radius:12px; padding:20px 24px; display:flex; align-items:center; gap:16px; }
 .wps-report-generating-spinner { width:32px; height:32px; border:3px solid #c7d2fe; border-top-color:#6366f1; border-radius:50%; animation:wps-spin 0.8s linear infinite; flex-shrink:0; }
 @keyframes wps-spin { to { transform:rotate(360deg); } }
+
+/* ── PDF chunk rendering helpers ─────────────────────────────── */
+/* Ensure every element html2canvas captures has a solid bg      */
+#wps-ai-report-wrap .wps-report-section-title,
+#wps-ai-report-wrap .wps-report-section-body > *,
+#wps-ai-report-wrap .wps-report-q-header,
+#wps-ai-report-wrap .wps-report-q-block > p,
+#wps-ai-report-wrap .wps-report-notable,
+#wps-ai-report-wrap .wps-report-finding,
+#wps-ai-report-wrap .wps-report-correlation-item,
+#wps-ai-report-wrap .wps-report-note,
+#wps-ai-report-wrap h4 {
+    background-color: #ffffff;
+}
+/* Section title needs the full indigo gradient when captured */
+#wps-ai-report-wrap .wps-report-section-title {
+    background-color: #fafafa;
+    padding: 12px 28px;
+    margin: 0;
+}
 
 /* ── Research Analysis Report Container ──────────────────────── */
 .wps-report-container { margin-bottom:28px; }
